@@ -1,14 +1,16 @@
 name: Deploy web app to GitHub Pages
 
+# The built site is published straight to the `gh-pages` branch. Publishing a branch
+# (instead of an Actions artifact) keeps the deployment deterministic: there is no
+# artifact service in the path, so a deploy cannot fail with "Artifact ... not found".
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -16,10 +18,8 @@ concurrency:
 
 jobs:
   deploy:
+    name: Publish gh-pages
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,12 +34,35 @@ jobs:
       - name: Build
         run: npm run build
 
-      - uses: actions/configure-pages@v5
+      - name: Smoke-test the built app
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const html = fs.readFileSync("web/index.html", "utf8");
+            const version = require("./package.json").version;
+            const checks = {
+              "app version in the page": html.includes(`"${version}"`) || html.includes(`>${version}<`),
+              "manifest linked": html.includes("manifest.webmanifest"),
+              "service worker registered": html.includes("serviceWorker"),
+              "no remote scripts or fonts": !/(src|href)="https?:\/\//i.test(html),
+              "nojekyll present": fs.existsSync("web/.nojekyll"),
+            };
+            for (const [name, ok] of Object.entries(checks)) {
+              console.log(`${ok ? "ok  " : "FAIL"} ${name}`);
+              if (!ok) process.exitCode = 1;
+            }
+          '
 
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: web
-          retention-days: 1
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Push to gh-pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd web
+          git init -q -b gh-pages
+          git config user.name "VaultOTP"
+          git config user.email "vaultotp@users.noreply.github.com"
+          git add -A
+          git commit -qm "deploy: ${GITHUB_SHA:0:7} — $(node -p "require('../package.json').version")"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          echo "published https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
