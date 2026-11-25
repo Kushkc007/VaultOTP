@@ -44,7 +44,8 @@ portable:
 
 mac:
   category: public.app-category.productivity
-  icon: build/desktop/icon.ico
+  # .ico is Windows-only; macOS needs a >=512px PNG (electron-builder makes the .icns)
+  icon: build/desktop/icon.png
   target:
     - target: dmg
       arch:

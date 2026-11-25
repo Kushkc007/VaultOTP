@@ -102,4 +102,8 @@ for (const [dir, w, h] of splashes) {
 
 // Shared logo for the web build / README
 render(fullSlab(), join(ROOT, 'docs', 'logo-512.png'), 512);
+
+// 1024px PNG used as the macOS icon source (electron-builder needs >= 512px).
+mkdirSync(join(ROOT, 'build', 'desktop'), { recursive: true });
+render(fullSlab(), join(ROOT, 'build', 'desktop', 'icon.png'), 1024);
 console.log('done');
