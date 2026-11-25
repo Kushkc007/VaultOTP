@@ -48,8 +48,7 @@ run('npx', ['cap', 'sync', 'android'], MOBILE);
 // 4) gradle
 // On POSIX the wrapper is run through sh so a missing execute bit (common when the
 // repository is checked out on Windows) cannot break the build.
-const gradlew = isWin ? 'gradlew.bat' : 'gradlew';
-const gradlewRunner = isWin ? gradlew : 'sh';
+const gradlew = isWin ? 'gradlew.bat' : './gradlew';
 const env = {};
 
 if (!process.env.JAVA_HOME) {
@@ -96,7 +95,9 @@ if (signingConfigured) {
 }
 
 try {
-  const gradle = (...tasks) => run(gradlewRunner, [gradlew, ...tasks], ANDROID, env);
+  // POSIX: `sh ./gradlew <tasks>` so a missing execute bit cannot break the build.
+  const gradle = (...tasks) =>
+    isWin ? run(gradlew, tasks, ANDROID, env) : run('sh', [gradlew, ...tasks], ANDROID, env);
   gradle('assembleDebug');
   if (signingConfigured) {
     gradle('assembleRelease');
