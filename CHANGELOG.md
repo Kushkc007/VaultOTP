@@ -67,6 +67,6 @@ First public, GitHub-ready release. Same UI as the prototype, with the storage, 
 ### Added
 - Initial single-file TOTP authenticator with Base32 + WebCrypto HMAC-SHA1.
 
-[3.0.0]: https://github.com/<your-user>/vaultotp/releases/tag/v3.0.0
-[2.0.0]: https://github.com/<your-user>/vaultotp
-[1.0.0]: https://github.com/<your-user>/vaultotp
+[3.0.0]: https://github.com/Kushkc007/vaultotp/releases/tag/v3.0.0
+[2.0.0]: https://github.com/Kushkc007/vaultotp
+[1.0.0]: https://github.com/Kushkc007/vaultotp

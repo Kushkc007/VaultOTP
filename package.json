@@ -14,13 +14,13 @@
     "electron",
     "capacitor"
   ],
-  "homepage": "https://github.com/<your-user>/vaultotp#readme",
+  "homepage": "https://github.com/Kushkc007/vaultotp#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<your-user>/vaultotp.git"
+    "url": "https://github.com/Kushkc007/vaultotp.git"
   },
   "bugs": {
-    "url": "https://github.com/<your-user>/vaultotp/issues"
+    "url": "https://github.com/Kushkc007/vaultotp/issues"
   },
   "license": "MIT",
   "author": "VaultOTP contributors",

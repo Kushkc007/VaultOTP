@@ -1,8 +1,8 @@
 # ⚡ VaultOTP
 
-[![CI](https://github.com/OWNER/vaultotp/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/vaultotp/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/OWNER/vaultotp?include_prereleases&sort=semver)](https://github.com/OWNER/vaultotp/releases)
-[![Downloads](https://img.shields.io/github/downloads/OWNER/vaultotp/total)](https://github.com/OWNER/vaultotp/releases)
+[![CI](https://github.com/Kushkc007/vaultotp/actions/workflows/ci.yml/badge.svg)](https://github.com/Kushkc007/vaultotp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Kushkc007/vaultotp?include_prereleases&sort=semver)](https://github.com/Kushkc007/vaultotp/releases)
+[![Downloads](https://img.shields.io/github/downloads/Kushkc007/vaultotp/total)](https://github.com/Kushkc007/vaultotp/releases)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20android-6366f1.svg)](#downloads)
 [![Tests](https://img.shields.io/badge/RFC%206238-30%20tests%20passing-10b981.svg)](tests)
