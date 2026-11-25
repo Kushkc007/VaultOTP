@@ -1,0 +1,62 @@
+appId: com.vaultotp.desktop
+productName: VaultOTP
+copyright: Copyright © VaultOTP contributors
+
+directories:
+  output: dist/desktop
+  buildResources: build/desktop
+
+# Only the shell + the built web app are packaged.
+files:
+  - desktop/main.js
+  - web/**
+  - package.json
+
+asar: true
+compression: maximum
+npmRebuild: false
+
+win:
+  icon: build/desktop/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+  artifactName: VaultOTP-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: VaultOTP
+  uninstallDisplayName: VaultOTP ${version}
+  artifactName: VaultOTP-Setup-${version}.${ext}
+
+portable:
+  artifactName: VaultOTP-${version}-portable.${ext}
+  requestExecutionLevel: user
+
+mac:
+  category: public.app-category.productivity
+  icon: build/desktop/icon.ico
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  artifactName: VaultOTP-${version}-${arch}.${ext}
+
+linux:
+  icon: web/icons/icon-512.png
+  category: Utility
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  artifactName: VaultOTP-${version}-${arch}.${ext}

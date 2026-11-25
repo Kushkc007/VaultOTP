@@ -1,0 +1,31 @@
+name: 💡 Feature request
+description: Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: "When I have 30 keys, I cannot group them by project…"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Which platforms need it?
+      multiple: true
+      options: [Web, Windows EXE, Android, All]
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Project constraints
+      options:
+        - label: This can work fully offline (no network calls)
+          required: true
+        - label: This does not require a new runtime dependency

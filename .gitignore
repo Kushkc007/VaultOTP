@@ -1,0 +1,70 @@
+# ---------- dependencies ----------
+node_modules/
+.npm/
+npm-install.log
+
+# ---------- build output ----------
+web/
+mobile/www/
+dist/
+release/
+desktop/dist/
+*.asar
+*.blockmap
+
+# ---------- Android / Gradle ----------
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/capacitor-cordova-android-plugins/build/
+mobile/android/local.properties
+mobile/android/app/release/
+mobile/android/app/src/main/assets/public/
+mobile/android/app/src/main/assets/capacitor.config.json
+mobile/android/app/src/main/assets/capacitor.plugins.json
+mobile/android/app/src/main/res/xml/config.xml
+mobile/android/app/src/main/res/drawable*/splash.png
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# ---------- iOS (only if you add the shell with `npx cap add ios`) ----------
+*.ipa
+
+# ---------- secrets / local env ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+google-services.json
+local.properties
+keystore.properties
+secrets.properties
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# ---------- local test output (screenshots are committed in docs/screenshots/) ----------
+docs/test-report/
+*.pid
+docs/test-report/apk-unzip/
+
+# ---------- logs / temp ----------
+*.log
+tmp/
+.cache/
+
+# ---------- local release staging ----------
+release/
+build-apk.log
+*.sha256
+SHA256SUMS.txt

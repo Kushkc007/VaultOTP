@@ -1,0 +1,55 @@
+name: 🐞 Bug report
+description: Something is broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Never paste real authenticator secrets, QR codes or one-time codes here.**
+        Replace them with a throwaway key such as `JBSWY3DPEHPK3PXP`.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where does it happen?
+      options:
+        - Web app (browser)
+        - Single-file HTML
+        - Windows EXE
+        - Android APK
+        - Build / tooling
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in ⚙️ → About, or the release tag
+      placeholder: "3.1.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS / browser / device
+      placeholder: "Windows 11 · Chrome 131 · or Android 14 / Pixel 7"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the app
+        2. Add a key with secret ABC...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output / screenshot (optional)
+      description: DevTools console (web) or `View → Toggle Developer Tools` (EXE). Remove any secrets.

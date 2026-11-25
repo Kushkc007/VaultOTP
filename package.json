@@ -1,0 +1,46 @@
+{
+  "name": "vaultotp",
+  "version": "3.1.0",
+  "private": true,
+  "main": "desktop/main.js",
+  "description": "VaultOTP — a private, fully offline TOTP authenticator for the web, Windows desktop and Android.",
+  "keywords": [
+    "totp",
+    "authenticator",
+    "2fa",
+    "otp",
+    "offline",
+    "privacy",
+    "electron",
+    "capacitor"
+  ],
+  "homepage": "https://github.com/<your-user>/vaultotp#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<your-user>/vaultotp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/<your-user>/vaultotp/issues"
+  },
+  "license": "MIT",
+  "author": "VaultOTP contributors",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "dev": "node tools/build.mjs && node tools/serve.mjs",
+    "test": "node --test tests/",
+    "icons": "node tools/gen-icons.mjs",
+    "build:desktop": "node tools/build.mjs && electron-builder --config desktop/electron-builder.yml",
+    "build:android": "node tools/build.mjs && node tools/build-android.mjs",
+    "build:all": "npm run build:desktop && npm run build:android"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "puppeteer-core": "^23.11.1",
+    "qrcode": "^1.5.4"
+  }
+}

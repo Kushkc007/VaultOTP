@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07090e">
+  <title>VaultOTP — Offline TOTP Authenticator</title>
+  <meta name="description" content="VaultOTP is a private, fully offline TOTP authenticator for web, Windows desktop and Android. No accounts, no cloud, no tracking.">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; form-action 'none'; base-uri 'none'">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="VaultOTP">
+  <style>
+    /* Self-hosted variable fonts — the app never touches a third-party server. */
+    @font-face {
+      font-family: 'Plus Jakarta Sans';
+      font-style: normal;
+      font-weight: 400 800;
+      font-display: swap;
+      src: url('fonts/plus-jakarta-sans-latin.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 400 800;
+      font-display: swap;
+      src: url('fonts/jetbrains-mono-latin.woff2') format('woff2');
+    }
+  </style>
+  <script src="jsQR.js"></script>
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #171933 0%, var(--bg-dark) 75%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
+      padding-top: calc(24px + env(safe-area-inset-top));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container {
+      width: 100%;
+      max-width: min(1480px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header & Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-cyan));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .brand-text h1 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      border: none;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-scan {
+      background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
+      border: none;
+      box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+    }
+
+    .btn-danger-outline {
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .btn-danger-outline:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--danger);
+    }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-bar {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 12px 16px 12px 42px;
+      border-radius: 14px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    .sort-select {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      color: var(--text-main);
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .sort-select:focus { border-color: var(--accent); }
+    .sort-select option { background: #0f1624; color: var(--text-main); }
+
+    /* Multi-select Picker (Export / Import) */
+    .picker-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .check-row input, .pick-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .pick-count { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; }
+
+    .picker-list {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .pick-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pick-item:hover { border-color: rgba(99, 102, 241, 0.4); }
+
+    .pick-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+    .pick-meta { min-width: 0; }
+    .pick-meta h4 { font-size: 0.92rem; font-weight: 700; }
+    .pick-meta span { font-size: 0.72rem; color: var(--text-muted); word-break: break-all; }
+
+    .dup-tag { color: #fbbf24; }
+
+    /* Grid & Cards */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+      gap: 18px;
+    }
+
+    /* 4 cards per row on wide screens, 3 on laptops, 2 on tablets, 1 on phones */
+    @media (min-width: 1500px) { .vault-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (min-width: 1180px) and (max-width: 1499px) { .vault-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (min-width: 860px) and (max-width: 1179px) { .vault-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 600px) and (max-width: 859px) { .vault-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    /* Cards shrink gracefully in narrow columns (4-up layouts) */
+    .vault-card { container-type: inline-size; }
+    @container (max-width: 355px) {
+      .otp-display-row { padding: 10px 12px; gap: 8px; }
+      .otp-code { font-size: 1.45rem; letter-spacing: 2px; }
+      .copy-label { display: none; }
+      .copy-btn { padding: 8px 11px; }
+      .card-actions { gap: 6px; }
+      .card-action-btn { font-size: 0.74rem; }
+      .vault-card { padding: 16px; }
+      .entity-details h3 { font-size: 1rem; }
+    }
+
+    .vault-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vault-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-entity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .entity-icon {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .entity-icon.editable {
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .entity-icon.editable:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .entity-icon.editable::after {
+      content: '✏️';
+      position: absolute;
+      bottom: -6px;
+      right: -6px;
+      font-size: 0.55rem;
+      background: #0f1624;
+      border: 1px solid var(--card-border);
+      border-radius: 50%;
+      width: 17px;
+      height: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Icon Picker */
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .icon-cell {
+      font-size: 1.45rem;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .icon-cell:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.12);
+    }
+
+    .entity-details h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .entity-details p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 4px 10px;
+      border-radius: 20px;
+      color: var(--accent-cyan);
+      white-space: nowrap;
+    }
+
+    /* Progress Ring Bar */
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent));
+      width: 100%;
+      transition: width 1s linear;
+    }
+
+    .otp-display-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 12px 16px;
+      border-radius: 12px;
+    }
+
+    .otp-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: #38bdf8;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+      user-select: all;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .status-line {
+      font-size: 0.75rem;
+      color: var(--accent-emerald);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-emerald);
+    }
+
+    /* Secret Key Inline View Area */
+    .inline-key-drawer {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: -6px;
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .inline-key-drawer.open {
+      display: flex;
+    }
+
+    .inline-key-title {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+
+    .inline-key-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #fde047;
+      word-break: break-all;
+      user-select: all;
+    }
+
+    /* Bottom Actions Row in Card */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .card-action-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .card-action-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    .card-action-btn.delete-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    /* Modals & Dialogs */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #0f1624;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 520px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .modal-box h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group select {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Recycle Bin List */
+    .recycle-list {
+      max-height: 360px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .recycle-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .recycle-meta h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .recycle-meta span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .recycle-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: calc(24px + env(safe-area-inset-bottom));
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, 20px);
+      background: #1e293b;
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 400;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      grid-column: 1 / -1;
+    }
+
+    .empty-state div {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    /* ===================== QR SCANNER OVERLAY ===================== */
+    .scanner-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: #05070c;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .scanner-overlay.active {
+      display: flex;
+    }
+
+    .scanner-top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: calc(env(safe-area-inset-top) + 14px) 18px 14px;
+      background: rgba(5, 7, 12, 0.85);
+      z-index: 2;
+    }
+
+    .scanner-title {
+      font-size: 1rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .scanner-stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #scannerVideo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .scan-guide {
+      position: relative;
+      width: min(74vw, 320px);
+      aspect-ratio: 1;
+      border-radius: 24px;
+      box-shadow: 0 0 0 100vmax rgba(4, 6, 10, 0.62);
+    }
+
+    .scan-guide span {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-color: var(--accent-cyan);
+      border-style: solid;
+      border-width: 0;
+      filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.7));
+      animation: cornerPulse 1.6s ease-in-out infinite;
+    }
+
+    .scan-guide span:nth-child(1) { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 24px; }
+    .scan-guide span:nth-child(2) { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 24px; }
+    .scan-guide span:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 24px; }
+    .scan-guide span:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 24px; }
+
+    @keyframes cornerPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .scan-hint {
+      margin: 18px 24px calc(env(safe-area-inset-bottom) + 28px);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .scan-hint.error {
+      color: #fca5a5;
+    }
+
+    .scanner-loading {
+      position: absolute;
+      z-index: 2;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    /* ===================== SPLASH SCREEN ===================== */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: radial-gradient(circle at 50% 30%, #1b2044 0%, var(--bg-dark) 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: splashOut 0.55s ease 1.5s forwards;
+    }
+
+    .splash-wrap {
+      position: relative;
+      width: min(36vw, 150px);
+      aspect-ratio: 1;
+    }
+
+    .splash-logo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      animation: logoPop 0.75s cubic-bezier(0.16, 1, 0.3, 1) both,
+                 logoGlow 2s ease-in-out;
+    }
+
+    .splash-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 26%;
+      border: 3px solid rgba(99, 102, 241, 0.7);
+      opacity: 0;
+      pointer-events: none;
+      animation: ringExpand 1.3s ease-out 0.25s both;
+    }
+
+    @keyframes logoPop {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes logoGlow {
+      0%   { filter: none; }
+      45%  { filter: drop-shadow(0 0 28px rgba(99, 102, 241, 0.85)); }
+      100% { filter: drop-shadow(0 0 14px rgba(6, 182, 212, 0.35)); }
+    }
+
+    @keyframes ringExpand {
+      from { opacity: 0.9; transform: scale(1); }
+      to   { opacity: 0;   transform: scale(1.95); }
+    }
+
+    @keyframes splashOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #splash, .splash-logo, .splash-ring { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+    }
+
+    .container {
+      animation: riseIn 0.55s ease-out 0.15s both;
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===================== MOBILE RESPONSIVE ===================== */
+    @media (max-width: 520px) {
+      body { padding: 14px; padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+      .container { gap: 16px; }
+      .vault-grid { grid-template-columns: 1fr; gap: 14px; }
+      .controls { flex-direction: column; align-items: stretch; }
+      header { gap: 12px; }
+      .brand-icon { width: 38px; height: 38px; font-size: 19px; }
+      .brand-text h1 { font-size: 1.25rem; }
+      .header-actions { width: 100%; }
+      .header-actions .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: 0.76rem;
+        gap: 5px;
+      }
+      .vault-card { padding: 16px; }
+      .otp-code { font-size: 1.55rem; letter-spacing: 3px; }
+      .copy-btn { padding: 8px 10px; font-size: 0.74rem; }
+      .modal-box { padding: 20px; }
+      .modal-footer .btn { flex: 1; justify-content: center; }
+      .card-action-btn { font-size: 0.74rem; padding: 6px 6px; }
+      .lock-box { padding: 26px 20px; }
+      .settings-row { flex-wrap: wrap; }
+    }
+
+    /* ===================== LOCK SCREEN ===================== */
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 10%, #1a1c40 0%, var(--bg-dark) 70%);
+      backdrop-filter: blur(6px);
+    }
+    #lockScreen.active { display: flex; }
+    .lock-box {
+      width: 100%;
+      max-width: 400px;
+      background: #0f1624;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      text-align: center;
+      animation: riseIn 0.35s ease-out both;
+    }
+    .lock-logo {
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      box-shadow: 0 12px 30px var(--accent-glow);
+    }
+    .lock-box h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; }
+    .lock-box p.lock-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; }
+    .pin-input {
+      width: 100%;
+      text-align: center;
+      letter-spacing: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      padding: 14px;
+    }
+    .lock-error {
+      color: #f87171;
+      font-size: 0.8rem;
+      font-weight: 600;
+      min-height: 18px;
+      margin-top: 10px;
+    }
+    .lock-links { margin-top: 18px; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      padding: 4px;
+    }
+    .link-btn:hover { color: var(--text-main); }
+
+    /* ===================== SETTINGS ===================== */
+    .settings-block {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .settings-block h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 7px 0;
+    }
+    .settings-row .setting-label { font-size: 0.85rem; font-weight: 600; }
+    .settings-row .setting-hint { font-size: 0.72rem; color: var(--text-dim); font-weight: 500; margin-top: 2px; display: block; }
+    .settings-row select, .settings-row input[type="password"] {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      max-width: 170px;
+    }
+    .badge-on { color: var(--accent-emerald); font-weight: 700; font-size: 0.78rem; }
+    .badge-off { color: var(--text-dim); font-weight: 700; font-size: 0.78rem; }
+    .kbd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 2px 7px;
+      color: var(--text-main);
+    }
+    .shortcut-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: 0.85rem; color: var(--text-muted); }
+    .otp-code { cursor: pointer; }
+    .card-hint { font-size: 0.68rem; color: var(--text-dim); text-align: right; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- Splash Screen -->
+  <div id="splash">
+    <div class="splash-wrap">
+      <div class="splash-ring"></div>
+      <svg class="splash-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="slg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#06b6d4"/>
+          </linearGradient>
+        </defs>
+        <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#slg)"/>
+        <rect x="44" y="44" width="424" height="424" rx="102" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="6"/>
+        <path d="M292 92 L164 300 L240 300 L222 420 L350 214 L272 214 Z" fill="#ffffff" stroke="#ffffff" stroke-width="18" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>VaultOTP</h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-scan" onclick="startScanner()">📷 Scan QR</button>
+        <button class="btn" onclick="openRecycleBinModal()">♻️ Bin (<span id="recycleCount">0</span>)</button>
+        <button class="btn" onclick="openExportModal()">Export</button>
+        <button class="btn" onclick="triggerImport()">Import</button>
+        <input type="file" id="importFileInput" accept=".json,.votp,application/json" style="display:none" onchange="handleImportFile(event)">
+        <button class="btn" onclick="openSettings()" title="Settings (PIN, auto-lock, clipboard)">⚙️</button>
+        <button class="btn" id="lockBtn" style="display:none;" onclick="lockVault(true)" title="Lock vault now">🔒 Lock</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Key</button>
+      </div>
+    </header>
+
+    <!-- Search, Sort & Filters -->
+    <div class="controls">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search accounts, services..." oninput="renderCards()">
+      </div>
+      <select class="sort-select" id="sortSelect" onchange="onSortChange()" title="Sort keys">
+        <option value="name_asc">🔤 Name A–Z</option>
+        <option value="name_desc">🔤 Name Z–A</option>
+        <option value="newest">🆕 Newest First</option>
+        <option value="oldest">📜 Oldest First</option>
+      </select>
+    </div>
+
+    <!-- Active Cards Grid -->
+    <div class="vault-grid" id="vaultGrid">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- Modal: Add Authenticator Key -->
+  <div class="modal-backdrop" id="addModal">
+    <div class="modal-box">
+      <h2>🔐 Add Secret Key</h2>
+
+      <button class="btn btn-scan" style="justify-content: center; padding: 13px 16px; font-size: 0.92rem;" onclick="startScanner()">
+        📷 Scan QR Code Instead
+      </button>
+
+      <div class="or-divider">or enter manually</div>
+
+      <div class="form-group">
+        <label>Service / Platform Name</label>
+        <input type="text" id="addName" placeholder="e.g. GitHub, Google, AWS">
+      </div>
+      <div class="form-group">
+        <label>Account / Email (Optional)</label>
+        <input type="text" id="addAccount" placeholder="e.g. alex@example.com">
+      </div>
+      <div class="form-group">
+        <label>Secret Key (Base32)</label>
+        <input type="text" id="addSecret" placeholder="Paste your Base32 secret key" autocapitalize="characters" autocomplete="off" spellcheck="false" style="font-family: 'JetBrains Mono', monospace;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Digits</label>
+          <select id="addDigits">
+            <option value="6" selected>6 Digits</option>
+            <option value="8">8 Digits</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Period</label>
+          <select id="addPeriod">
+            <option value="30" selected>30 Seconds</option>
+            <option value="60">60 Seconds</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('addModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewEntry()">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Recycle Bin -->
+  <div class="modal-backdrop" id="recycleModal">
+    <div class="modal-box" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>♻️ Recycle Bin</h2>
+        <button class="btn btn-danger-outline" style="font-size: 0.75rem;" onclick="emptyRecycleBin()">Empty Bin</button>
+      </div>
+      <div class="recycle-list" id="recycleListContainer">
+        <!-- Generated via JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('recycleModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Export Picker -->
+  <div class="modal-backdrop" id="exportModal">
+    <div class="modal-box" style="max-width: 540px;">
+      <h2>📤 Export Keys</h2>
+      <div class="picker-toolbar">
+        <label class="check-row"><input type="checkbox" id="expAll" checked onchange="expToggleAll(this)"> Select All</label>
+        <span class="pick-count" id="expCount"></span>
+      </div>
+      <div class="picker-list" id="exportList"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('exportModal')">Cancel</button>
+        <button class="btn btn-primary" id="expGo" onclick="doExportSelected()">Export (0)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Import Picker -->
+  <div class="modal-backdrop" id="importModal">
+    <div class="modal-box" style="max-width: 540px;">
+      <h2>📥 Import Keys</h2>
+      <div class="picker-toolbar">
+        <label class="check-row"><input type="checkbox" id="impAll" onchange="impToggleAll(this)"> Select All</label>
+        <span class="pick-count" id="impCount"></span>
+      </div>
+      <div class="picker-list" id="importList"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('importModal'); pendingImportAccounts = null;">Cancel</button>
+        <button class="btn btn-primary" id="impGo" onclick="doImportSelected()">Import (0)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Icon Picker -->
+  <div class="modal-backdrop" id="iconModal">
+    <div class="modal-box" style="max-width: 460px;">
+      <h2>🎨 Change Icon</h2>
+      <div class="icon-grid" id="iconGrid"></div>
+      <div class="form-group">
+        <label>Custom Emoji (Optional)</label>
+        <input type="text" id="customEmoji" maxlength="8" placeholder="Paste any emoji here">
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('iconModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="applyCustomEmoji()">Use Emoji</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Scanner Overlay -->
+  <div class="scanner-overlay" id="scannerOverlay">
+    <div class="scanner-top">
+      <div class="scanner-title">📷 Scan QR Code</div>
+      <button class="btn" onclick="cancelScanner()">✕ Cancel</button>
+    </div>
+    <div class="scanner-stage">
+      <video id="scannerVideo" autoplay muted playsinline></video>
+      <div class="scanner-loading" id="scannerLoading">Starting camera…</div>
+      <div class="scan-guide"><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="scan-hint" id="scanHint">Point your camera at the service's QR code</div>
+  </div>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <!-- Lock screen -->
+  <div id="lockScreen">
+    <div class="lock-box">
+      <div class="lock-logo">⚡</div>
+      <h2>Vault Locked</h2>
+      <p class="lock-sub" id="lockSub">Enter your PIN to decrypt the vault. The vault key never leaves this device.</p>
+      <input type="password" id="unlockPin" class="pin-input" inputmode="numeric" autocomplete="off" placeholder="••••" onkeydown="if(event.key==='Enter')unlockVault()">
+      <div class="lock-error" id="lockError"></div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center; padding:13px;" id="unlockBtn" onclick="unlockVault()">Unlock Vault</button>
+      <div class="lock-links">
+        <button class="link-btn" onclick="showRestoreHelp()">Forgot PIN?</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Settings -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal-box" style="max-width: 520px;">
+      <h2>⚙️ Settings</h2>
+
+      <div class="settings-block">
+        <h3>Vault encryption</h3>
+        <div class="settings-row">
+          <div>
+            <span class="setting-label">PIN lock</span>
+            <span class="setting-hint" id="pinStatusHint">Secrets are stored unencrypted.</span>
+          </div>
+          <span id="pinStatusBadge" class="badge-off">OFF</span>
+        </div>
+        <div class="settings-row">
+          <div>
+            <span class="setting-label">Auto-lock after</span>
+            <span class="setting-hint">Locks the vault when you walk away.</span>
+          </div>
+          <select id="autoLockSelect" onchange="onAutoLockChange()">
+            <option value="1">1 min</option>
+            <option value="3">3 min</option>
+            <option value="5">5 min</option>
+            <option value="15">15 min</option>
+            <option value="0">Never</option>
+          </select>
+        </div>
+        <div class="modal-footer" style="margin-top:6px;">
+          <button class="btn" id="pinPrimaryBtn" onclick="startPinSetup()">Set PIN</button>
+          <button class="btn" id="pinRemoveBtn" style="display:none;" onclick="removePin()">Remove PIN</button>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>Privacy</h3>
+        <div class="settings-row">
+          <div>
+            <span class="setting-label">Clear clipboard after</span>
+            <span class="setting-hint">Copied codes are wiped from the clipboard.</span>
+          </div>
+          <select id="clipboardSelect" onchange="onClipboardChange()">
+            <option value="15">15 s</option>
+            <option value="30">30 s</option>
+            <option value="60">60 s</option>
+            <option value="0">Never</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <div>
+            <span class="setting-label">Encrypted backup</span>
+            <span class="setting-hint">Export a password-protected .votp file.</span>
+          </div>
+          <button class="btn" style="font-size:0.78rem;" onclick="openEncryptedExport()">Export…</button>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>About</h3>
+        <div class="settings-row">
+          <div>
+            <span class="setting-label">Version</span>
+            <span class="setting-hint">VaultOTP is 100% offline — no accounts, no cloud, no telemetry.</span>
+          </div>
+          <span class="badge-on" id="versionLabel">3.1.0</span>
+        </div>
+        <div class="modal-footer" style="margin-top:6px;">
+          <button class="btn" onclick="openShortcuts()">⌨️ Shortcuts</button>
+          <button class="btn" onclick="runSelfTest()">✅ Run self-test</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('settingsModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Shortcuts -->
+  <div class="modal-backdrop" id="shortcutsModal">
+    <div class="modal-box" style="max-width: 420px;">
+      <h2>⌨️ Keyboard Shortcuts</h2>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>Focus search</span><span class="kbd">/</span></div>
+        <div class="shortcut-row"><span>Add a new key</span><span class="kbd">N</span></div>
+        <div class="shortcut-row"><span>Scan a QR code</span><span class="kbd">S</span></div>
+        <div class="shortcut-row"><span>Lock the vault</span><span class="kbd">L</span></div>
+        <div class="shortcut-row"><span>Open settings</span><span class="kbd">,</span></div>
+        <div class="shortcut-row"><span>Close dialog</span><span class="kbd">Esc</span></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('shortcutsModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Encrypted backup password -->
+  <div class="modal-backdrop" id="backupPasswordModal">
+    <div class="modal-box" style="max-width: 440px;">
+      <h2 id="backupPasswordTitle">🔐 Encrypted Backup</h2>
+      <p style="color: var(--text-muted); font-size:0.85rem; margin-bottom:16px;" id="backupPasswordHint">Choose a strong password. Without it the backup cannot be opened — not even by you.</p>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="backupPassword" autocomplete="off" placeholder="At least 8 characters" onkeydown="if(event.key==='Enter')confirmBackupPassword()">
+      </div>
+      <div class="lock-error" id="backupError"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('backupPasswordModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmBackupPassword()">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // STATE STORE — v3 container with optional PIN encryption
+    // ============================================================
+    const APP_VERSION = '3.1.0';
+    const STORAGE_KEY = 'vaultotp_vault_v3';
+    const PREFS_KEY = 'vaultotp_prefs_v1';
+    const SORT_KEY = 'vaultotp_sort';
+    const LEGACY_KEYS = ['vaultotp_data_v2', 'vaultotp_data'];
+    const KDF_ITERATIONS = 310000;
+    const AAD = 'vaultotp-container-v3';
+
+    let vault = { accounts: [], recycleBin: [] };
+    let prefs = { autoLockMinutes: 3, clipboardSeconds: 30 };
+    let lock = { enabled: false, salt: null, iterations: KDF_ITERATIONS };
+    let sessionKey = null;   // AES-GCM key, memory only, cleared on lock
+    let isLocked = false;
+
+    // ---------- base64 / buffer helpers ----------
+    function bufToB64(buf) {
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    function b64ToBuf(b64) {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    function randomB64(byteLength) {
+      return bufToB64(crypto.getRandomValues(new Uint8Array(byteLength)));
+    }
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    // ---------- crypto: PBKDF2-SHA256 -> AES-256-GCM ----------
+    async function deriveKey(secret, saltB64, iterations) {
+      const material = await crypto.subtle.importKey(
+        'raw', encoder.encode(secret), 'PBKDF2', false, ['deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: b64ToBuf(saltB64), iterations: iterations || KDF_ITERATIONS, hash: 'SHA-256' },
+        material,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function sealWith(key, plaintext) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv, additionalData: encoder.encode(AAD) }, key, encoder.encode(plaintext)
+      );
+      return { iv: bufToB64(iv), ct: bufToB64(ct) };
+    }
+
+    async function openWith(key, ivB64, ctB64) {
+      const pt = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: b64ToBuf(ivB64), additionalData: encoder.encode(AAD) }, key, b64ToBuf(ctB64)
+      );
+      return decoder.decode(pt);
+    }
+
+    // ---------- validation / normalisation ----------
+    function sanitizeVault(v) {
+      if (!v || typeof v !== 'object') return { accounts: [], recycleBin: [] };
+      const clean = list => (Array.isArray(list) ? list : [])
+        .filter(a => a && typeof a === 'object' && isValidSecret(a.secret))
+        .map(a => ({
+          id: String(a.id || ('acc_' + Math.random().toString(36).slice(2) + Date.now().toString(36))),
+          name: String(a.name || 'Unnamed Key').slice(0, 120),
+          account: String(a.account || '').slice(0, 200),
+          secret: String(a.secret).replace(/[\s-]+/g, '').toUpperCase(),
+          digits: parseInt(a.digits) === 8 ? 8 : 6,
+          period: parseInt(a.period) === 60 ? 60 : 30,
+          algorithm: ['SHA-1', 'SHA-256', 'SHA-512'].includes(a.algorithm) ? a.algorithm : 'SHA-1',
+          icon: String(a.icon || '🔐').slice(0, 8),
+          timeOffset: Number.isFinite(a.timeOffset) ? a.timeOffset : 0,
+          ...(a.deletedAt ? { deletedAt: String(a.deletedAt) } : {})
+        }));
+      return { accounts: clean(v.accounts), recycleBin: clean(v.recycleBin) };
+    }
+
+    function isValidSecret(secret) {
+      const s = String(secret || '').replace(/[\s-]+/g, '').toUpperCase();
+      return /^[A-Z2-7]+=*$/.test(s) && s.replace(/=+$/, '').length >= 8;
+    }
+
+    function newId() {
+      if (crypto.randomUUID) return 'acc_' + crypto.randomUUID();
+      return 'acc_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    // ---------- prefs ----------
+    function loadPrefs() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+        if (raw && typeof raw === 'object') prefs = { ...prefs, ...raw };
+      } catch (e) { /* keep defaults */ }
+    }
+
+    function savePrefs() {
+      try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+    }
+
+    // ---------- persistence ----------
+    let saveQueue = Promise.resolve();
+
+    async function writeStore(payload) {
+      if (lock.enabled && sessionKey) {
+        const sealed = await sealWith(sessionKey, payload);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          v: 3,
+          enc: true,
+          kdf: { name: 'PBKDF2-SHA256', iterations: lock.iterations, salt: lock.salt },
+          iv: sealed.iv,
+          ct: sealed.ct
+        }));
+      } else {
+        localStorage.setItem(STORAGE_KEY, payload);
+      }
+    }
+
+    function saveVault() {
+      updateRecycleCount();
+      const payload = JSON.stringify({ v: 3, accounts: vault.accounts, recycleBin: vault.recycleBin });
+      // Serialise writes so concurrent edits can never interleave
+      saveQueue = saveQueue.then(() => writeStore(payload)).catch(err => {
+        console.error('Vault save failed', err);
+        showToast('Could not save the vault (storage full or blocked).');
+      });
+      return saveQueue;
+    }
+
+    async function loadVault() {
+      loadPrefs();
+      let raw = localStorage.getItem(STORAGE_KEY);
+
+      if (!raw) {
+        // One-time migration from the older plaintext keys
+        for (const key of LEGACY_KEYS) {
+          const legacy = localStorage.getItem(key);
+          if (legacy) { raw = legacy; break; }
+        }
+      }
+
+      if (!raw) { saveVault(); return; }
+
+      let parsed = null;
+      try { parsed = JSON.parse(raw); } catch (e) { console.error('Vault parse error', e); }
+
+      if (parsed && parsed.enc) {
+        lock = {
+          enabled: true,
+          salt: parsed.kdf && parsed.kdf.salt,
+          iterations: (parsed.kdf && parsed.kdf.iterations) || KDF_ITERATIONS
+        };
+        isLocked = true;
+        LEGACY_KEYS.forEach(k => localStorage.removeItem(k));
+        return;
+      }
+
+      const clean = sanitizeVault(parsed);
+      vault = { accounts: clean.accounts, recycleBin: clean.recycleBin };
+      LEGACY_KEYS.forEach(k => localStorage.removeItem(k));
+      await saveVault();   // re-write in the v3 container shape
+    }
+
+    async function decryptVault(pin) {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!raw || !raw.enc) return true;
+      const key = await deriveKey(pin, raw.kdf.salt, raw.kdf.iterations);
+      const plaintext = await openWith(key, raw.iv, raw.ct);
+      const parsed = sanitizeVault(JSON.parse(plaintext));
+      vault = { accounts: parsed.accounts, recycleBin: parsed.recycleBin };
+      sessionKey = key;
+      isLocked = false;
+      return true;
+    }
+
+    function updateRecycleCount() {
+      const el = document.getElementById('recycleCount');
+      if (el) el.textContent = vault.recycleBin.length;
+    }
+
+    // Modal Handlers
+    function openAddModal() {
+      document.getElementById('addName').value = '';
+      document.getElementById('addAccount').value = '';
+      document.getElementById('addSecret').value = '';
+      document.getElementById('addDigits').value = '6';
+      document.getElementById('addPeriod').value = '30';
+      document.getElementById('addModal').classList.add('active');
+    }
+
+    function openRecycleBinModal() {
+      renderRecycleBin();
+      document.getElementById('recycleModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // Icon Picker
+    let iconEditTargetId = null;
+
+    const ICON_CHOICES = [
+      '🐙', '🌐', '☁️', '💬', '💳', '✉️', '💼', '🎮', '🔐', '🔑',
+      '🛡️', '⚡', '📱', '💻', '🖥️', '🏦', '💰', '📈', '🪙', '📧',
+      '🤖', '👾', '🚀', '🛒', '🎵', '🎬', '📷', '🍕', '☕', '🏥',
+      '✈️', '🚗', '🏠', '⚽', '🏋️', '👤', '👥', '🌍', '⭐', '🔥',
+      '💎', '🎯', '📦', '🗂️', '📁', '📌', '🏷️', '🟣', '🟢', '🔵'
+    ];
+
+    function openIconPicker(id) {
+      iconEditTargetId = id;
+      document.getElementById('customEmoji').value = '';
+      const grid = document.getElementById('iconGrid');
+      grid.innerHTML = ICON_CHOICES.map(e =>
+        `<div class="icon-cell" onclick="pickIcon('${e}')">${e}</div>`
+      ).join('');
+      document.getElementById('iconModal').classList.add('active');
+    }
+
+    function pickIcon(emoji) {
+      const acc = vault.accounts.find(a => a.id === iconEditTargetId);
+      if (acc) {
+        acc.icon = emoji;
+        saveVault();
+        renderCards();
+        showToast('Icon updated!');
+      }
+      closeModal('iconModal');
+    }
+
+    function applyCustomEmoji() {
+      const raw = document.getElementById('customEmoji').value.trim();
+      if (!raw) {
+        showToast('Type or paste an emoji first.');
+        return;
+      }
+      // Store at most 8 code points and never any HTML-significant characters
+      const cleaned = [...raw].filter(ch => !/[<>&"'`\\/]/.test(ch)).slice(0, 8).join('');
+      if (!cleaned) {
+        showToast('That icon is not allowed.');
+        return;
+      }
+      pickIcon(cleaned);
+    }
+
+    // Emoji Auto-Mapper
+    function pickEmoji(name) {
+      const n = (name || '').toLowerCase();
+      if (n.includes('git')) return '🐙';
+      if (n.includes('google')) return '🌐';
+      if (n.includes('aws') || n.includes('cloud')) return '☁️';
+      if (n.includes('discord')) return '💬';
+      if (n.includes('bank') || n.includes('pay') || n.includes('crypto')) return '💳';
+      if (n.includes('mail') || n.includes('proton')) return '✉️';
+      if (n.includes('slack') || n.includes('chat')) return '💼';
+      if (n.includes('game') || n.includes('steam')) return '🎮';
+      return '🔐';
+    }
+
+    // Add New Key
+    function saveNewEntry() {
+      const secretField = document.getElementById('addSecret').value.trim();
+      const uri = /^otpauth:\/\//i.test(secretField) ? parseOtpAuthUri(secretField) : null;
+
+      if (uri && uri.error) {
+        showToast(uri.error);
+        return;
+      }
+
+      const name = document.getElementById('addName').value.trim() || (uri ? uri.name : '');
+      const account = document.getElementById('addAccount').value.trim() || (uri ? uri.account : '');
+      const secret = (uri ? uri.secret : secretField).replace(/[\s-]+/g, '').toUpperCase();
+      const digits = uri ? uri.digits : parseInt(document.getElementById('addDigits').value);
+      const period = uri ? uri.period : parseInt(document.getElementById('addPeriod').value);
+      const algorithm = uri ? uri.algorithm : 'SHA-1';
+
+      if (!name || !secret) {
+        showToast('Please provide both name and secret key.');
+        return;
+      }
+
+      if (!isValidSecret(secret)) {
+        showToast('That is not a valid Base32 secret (A–Z and 2–7, at least 8 characters).');
+        return;
+      }
+
+      if (vault.accounts.some(a => a.secret === secret)) {
+        showToast('This key already exists in your vault.');
+        return;
+      }
+
+      vault.accounts.push({
+        id: newId(),
+        name,
+        account,
+        secret,
+        digits,
+        period,
+        algorithm,
+        icon: pickEmoji(name),
+        timeOffset: 0
+      });
+
+      saveVault();
+      closeModal('addModal');
+      renderCards();
+      showToast('Key added successfully!');
+    }
+
+    // Robust Clipboard Copy (Works locally & over HTTPS)
+    async function copyOTP(code) {
+      let copied = false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(code);
+          copied = true;
+        } catch (err) {}
+      }
+
+      if (!copied) {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          copied = true;
+        } catch (err) {
+          console.error('Fallback copy error', err);
+        }
+        document.body.removeChild(textarea);
+      }
+
+      if (copied) {
+        scheduleClipboardWipe();
+        const secs = prefs.clipboardSeconds;
+        showToast(secs > 0 ? `Code copied — clipboard clears in ${secs}s` : 'Code copied');
+      } else {
+        showToast('Failed to copy. Please copy manually.');
+      }
+    }
+
+    let clipboardTimer = null;
+
+    function scheduleClipboardWipe() {
+      clearTimeout(clipboardTimer);
+      if (!prefs.clipboardSeconds || prefs.clipboardSeconds <= 0) return;
+      clipboardTimer = setTimeout(async () => {
+        try {
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText('');
+        } catch (e) { /* clipboard busy — nothing to do */ }
+      }, prefs.clipboardSeconds * 1000);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function buzz(pattern) {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    // Inline Secret Key Toggle (the secret stays masked in the DOM until revealed)
+    function toggleInlineKey(id) {
+      const drawer = document.getElementById('key-drawer-' + id);
+      const btn = document.getElementById('view-btn-' + id);
+      if (!drawer || !btn) return;
+      const textEl = drawer.querySelector('.inline-key-text');
+      const acc = vault.accounts.find(a => a.id === id);
+
+      if (drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        if (textEl) textEl.textContent = '•••• •••• •••• ••••';
+        btn.innerHTML = '👁️ View Key';
+      } else {
+        drawer.classList.add('open');
+        if (textEl && acc) textEl.textContent = acc.secret;
+        btn.innerHTML = '🙈 Hide Key';
+      }
+    }
+
+    // Delete to Recycle Bin
+    function moveToRecycle(id) {
+      const index = vault.accounts.findIndex(a => a.id === id);
+      if (index !== -1) {
+        const item = vault.accounts.splice(index, 1)[0];
+        vault.recycleBin.push({
+          ...item,
+          deletedAt: new Date().toISOString()
+        });
+        saveVault();
+        renderCards();
+        showToast('Moved to Recycle Bin');
+      }
+    }
+
+    // Recycle Bin Operations
+    function restoreAccount(id) {
+      const index = vault.recycleBin.findIndex(a => a.id === id);
+      if (index !== -1) {
+        const item = vault.recycleBin.splice(index, 1)[0];
+        vault.accounts.push(item);
+        saveVault();
+        renderRecycleBin();
+        renderCards();
+        showToast('Account restored!');
+      }
+    }
+
+    function permanentlyDelete(id) {
+      const index = vault.recycleBin.findIndex(a => a.id === id);
+      if (index !== -1) {
+        vault.recycleBin.splice(index, 1);
+        saveVault();
+        renderRecycleBin();
+        showToast('Permanently deleted.');
+      }
+    }
+
+    function emptyRecycleBin() {
+      if (!vault.recycleBin.length) return;
+      if (confirm('Permanently delete all items from Recycle Bin?')) {
+        vault.recycleBin = [];
+        saveVault();
+        renderRecycleBin();
+        showToast('Recycle bin cleared.');
+      }
+    }
+
+    // Request Next Code (time-offset preview — never persisted, resets on reload)
+    function advanceCode(id) {
+      const acc = vault.accounts.find(a => a.id === id);
+      if (acc) {
+        acc.timeOffset = (acc.timeOffset || 0) + (acc.period || 30);
+        renderCards();
+        showToast('Previewing the next code step');
+      }
+    }
+
+    // ---------- Backup Transport (native share sheet / browser download) ----------
+    async function sendBackupJSON(json, explicitName) {
+      const fileName = explicitName || `VaultOTP_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+      // 1) Browser / PWA: Web Share API with files
+      try {
+        const file = new File([json], fileName, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'VaultOTP Backup' });
+          showToast('Backup exported!');
+          return;
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+
+      // 2) Native app (Android/iOS): write file, then open native share sheet
+      const cap = window.Capacitor;
+      if (cap && cap.isNativePlatform && cap.isNativePlatform()) {
+        try {
+          const { Filesystem } = cap.Plugins;
+          await Filesystem.writeFile({
+            path: fileName,
+            data: json,
+            directory: 'CACHE'
+          });
+          const { uri } = await Filesystem.getUri({
+            path: fileName,
+            directory: 'CACHE'
+          });
+          const result = await cap.Plugins.Share.share({
+            title: 'Save your VaultOTP backup',
+            files: [uri]
+          });
+          if (result && result.status === 'Canceled') {
+            showToast('Export canceled.');
+          } else {
+            showToast('Backup exported!');
+          }
+          Filesystem.deleteFile({ path: fileName, directory: 'CACHE' }).catch(() => {});
+          return;
+        } catch (err) {
+          console.error('Native export failed', err);
+          showToast('Native export failed — trying browser download…');
+        }
+      }
+
+      // 3) Fallback: classic browser download
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(json);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", fileName);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Backup downloaded');
+    }
+
+    // ---------- Export Picker (multi-select) ----------
+    function openExportModal() {
+      if (!vault.accounts.length) {
+        showToast('Vault is empty — nothing to export.');
+        return;
+      }
+      const list = document.getElementById('exportList');
+      list.innerHTML = vault.accounts.map(a => `
+        <label class="pick-item">
+          <input type="checkbox" class="exp-chk" value="${escapeHTML(a.id)}" checked onchange="updateExportCount()">
+          <span class="pick-icon">${escapeHTML(a.icon || '🔐')}</span>
+          <span class="pick-meta"><h4>${escapeHTML(a.name)}</h4><span>${escapeHTML(a.account || 'TOTP Account')}</span></span>
+        </label>`).join('');
+      document.getElementById('expAll').checked = true;
+      updateExportCount();
+      document.getElementById('exportModal').classList.add('active');
+    }
+
+    function expToggleAll(master) {
+      document.querySelectorAll('.exp-chk').forEach(cb => { cb.checked = master.checked; });
+      updateExportCount();
+    }
+
+    function updateExportCount() {
+      const total = vault.accounts.length;
+      const n = document.querySelectorAll('.exp-chk:checked').length;
+      document.getElementById('expCount').textContent = `${n} of ${total} selected`;
+      const btn = document.getElementById('expGo');
+      btn.textContent = `Export (${n})`;
+      btn.disabled = n === 0;
+    }
+
+    async function doExportSelected() {
+      const ids = [...document.querySelectorAll('.exp-chk:checked')].map(cb => cb.value);
+      if (!ids.length) return;
+      const accounts = vault.accounts.filter(a => ids.includes(a.id));
+      closeModal('exportModal');
+      await sendBackupJSON(JSON.stringify({
+        app: 'VaultOTP',
+        kind: 'plaintext-backup',
+        version: 3,
+        exportedAt: new Date().toISOString(),
+        accounts,
+        recycleBin: []
+      }, null, 2));
+    }
+
+    function triggerImport() {
+      document.getElementById('importFileInput').click();
+    }
+
+    // ---------- Import Picker (multi-select) ----------
+    let pendingImportAccounts = null;
+
+    async function readBackupFile(file) {
+      const text = await file.text();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        showToast('That file is not valid JSON.');
+        return null;
+      }
+
+      // Encrypted .votp backup: { enc: true, kdf, iv, ct }
+      if (parsed && parsed.enc && parsed.ct) {
+        const password = await askText({
+          title: '🔓 Encrypted Backup',
+          hint: 'Enter the password that was used when this backup was created.',
+          type: 'password',
+          okLabel: 'Decrypt',
+          validate: v => v.length > 0 || 'Enter the backup password.'
+        });
+        if (password === null) return null;
+        try {
+          const key = await deriveKey(password, parsed.kdf.salt, parsed.kdf.iterations);
+          const plaintext = await openWith(key, parsed.iv, parsed.ct);
+          parsed = JSON.parse(plaintext);
+        } catch (e) {
+          showToast('Wrong password — could not decrypt this backup.');
+          return null;
+        }
+      }
+
+      const rawList = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.accounts) ? parsed.accounts : null);
+      if (!rawList) {
+        showToast('Invalid backup file structure.');
+        return null;
+      }
+
+      const clean = sanitizeVault({ accounts: rawList, recycleBin: [] }).accounts;
+      if (!clean.length) {
+        showToast('No valid keys found in this file.');
+        return null;
+      }
+      return clean;
+    }
+
+    async function handleImportFile(event) {
+      const file = event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+
+      pendingImportAccounts = await readBackupFile(file);
+      if (pendingImportAccounts) openImportModal();
+    }
+
+    function openImportModal() {
+      const list = document.getElementById('importList');
+      list.innerHTML = pendingImportAccounts.map((a, idx) => {
+        const dup = vault.accounts.some(x => x.secret === a.secret);
+        return `
+        <label class="pick-item">
+          <input type="checkbox" class="imp-chk" data-idx="${idx}" ${dup ? '' : 'checked'} onchange="updateImportCount()">
+          <span class="pick-icon">${escapeHTML(a.icon || '🔐')}</span>
+          <span class="pick-meta"><h4>${escapeHTML(a.name || 'Unnamed Key')}</h4><span>${escapeHTML(a.account || '')}${dup ? ' · <b class="dup-tag">already in vault</b>' : ''}</span></span>
+        </label>`;
+      }).join('');
+      document.getElementById('impAll').checked = [...document.querySelectorAll('.imp-chk')].some(cb => cb.checked);
+      updateImportCount();
+      document.getElementById('importModal').classList.add('active');
+    }
+
+    function impToggleAll(master) {
+      document.querySelectorAll('.imp-chk').forEach(cb => { cb.checked = master.checked; });
+      updateImportCount();
+    }
+
+    function updateImportCount() {
+      const total = pendingImportAccounts ? pendingImportAccounts.length : 0;
+      const n = document.querySelectorAll('.imp-chk:checked').length;
+      document.getElementById('impCount').textContent = `${n} of ${total} selected`;
+      const btn = document.getElementById('impGo');
+      btn.textContent = `Import (${n})`;
+      btn.disabled = n === 0;
+    }
+
+    function doImportSelected() {
+      const boxes = [...document.querySelectorAll('.imp-chk:checked')];
+      if (!boxes.length || !pendingImportAccounts) return;
+
+      let added = 0;
+      let skipped = 0;
+      boxes.forEach(cb => {
+        const src = pendingImportAccounts[parseInt(cb.dataset.idx)];
+        if (!src || !isValidSecret(src.secret)) { skipped++; return; }
+        if (vault.accounts.some(x => x.secret === src.secret)) { skipped++; return; }
+        vault.accounts.push({
+          id: newId(),
+          name: src.name || 'Imported Key',
+          account: src.account || '',
+          secret: String(src.secret).replace(/[\s-]+/g, '').toUpperCase(),
+          digits: parseInt(src.digits) === 8 ? 8 : 6,
+          period: parseInt(src.period) === 60 ? 60 : 30,
+          algorithm: ['SHA-1', 'SHA-256', 'SHA-512'].includes(src.algorithm) ? src.algorithm : 'SHA-1',
+          icon: src.icon || pickEmoji(src.name),
+          timeOffset: 0
+        });
+        added++;
+      });
+
+      pendingImportAccounts = null;
+      saveVault();
+      renderCards();
+      closeModal('importModal');
+      showToast(skipped ? `${added} imported, ${skipped} skipped (duplicate or invalid).` : `${added} key(s) imported!`);
+    }
+
+    // ============================================================
+    // TOTP CORE (RFC 4226 / RFC 6238) — pure functions, unit-testable
+    // ============================================================
+    /* @core:start */
+    function base32ToBuffer(base32) {
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      const clean = String(base32).replace(/=+$/, '').replace(/[\s-]+/g, '').toUpperCase();
+      let bits = '';
+      for (let i = 0; i < clean.length; i++) {
+        const val = alphabet.indexOf(clean.charAt(i));
+        if (val === -1) throw new Error('Invalid Base32 character: ' + clean.charAt(i));
+        bits += val.toString(2).padStart(5, '0');
+      }
+      const bytes = new Uint8Array(Math.floor(bits.length / 8));
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
+      }
+      return bytes.buffer;
+    }
+
+    // Generates a TOTP for an explicit point in time (seconds since epoch).
+    async function totpAt(secret, options) {
+      const opts = options || {};
+      const period = opts.period || 30;
+      const digits = opts.digits || 6;
+      const algorithm = opts.algorithm || 'SHA-1';
+      const epochSeconds = opts.epochSeconds;
+
+      const keyBuffer = base32ToBuffer(secret);
+      const timeCounter = Math.floor(epochSeconds / period);
+
+      const counterBuffer = new ArrayBuffer(8);
+      const counterView = new DataView(counterBuffer);
+      counterView.setUint32(0, Math.floor(timeCounter / 0x100000000), false);
+      counterView.setUint32(4, timeCounter >>> 0, false);
+
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyBuffer,
+        { name: 'HMAC', hash: { name: algorithm } },
+        false,
+        ['sign']
+      );
+
+      const signature = await crypto.subtle.sign('HMAC', cryptoKey, counterBuffer);
+      const hmac = new Uint8Array(signature);
+
+      const off = hmac[hmac.length - 1] & 0x0f;
+      const binary =
+        ((hmac[off] & 0x7f) << 24) |
+        ((hmac[off + 1] & 0xff) << 16) |
+        ((hmac[off + 2] & 0xff) << 8) |
+        (hmac[off + 3] & 0xff);
+
+      return String(binary % Math.pow(10, digits)).padStart(digits, '0');
+    }
+
+    // Convenience wrapper for "now" (+ optional per-card offset)
+    async function generateTOTP(secret, period, digits, offset, algorithm) {
+      try {
+        const epochSeconds = Math.floor(Date.now() / 1000) + (offset || 0);
+        return await totpAt(secret, {
+          period: period || 30,
+          digits: digits || 6,
+          algorithm: algorithm || 'SHA-1',
+          epochSeconds
+        });
+      } catch (e) {
+        return 'ERROR';
+      }
+    }
+    /* @core:end */
+
+    // ============================================================
+    // QR CODE SCANNER ENGINE
+    // ============================================================
+    let scanStream = null;
+    let scanRafId = null;
+    let scanLock = false;
+
+    async function startScanner() {
+      if (typeof jsQR !== 'function') {
+        showToast('Scanner library failed to load.');
+        return;
+      }
+      closeModal('addModal');
+      document.getElementById('scannerOverlay').classList.add('active');
+      setScanHint('Point your camera at the service\'s QR code', false);
+      document.getElementById('scannerLoading').style.display = 'block';
+
+      try {
+        scanStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+      } catch (err) {
+        console.error('Camera error:', err);
+        stopScanner();
+        setScanHint('Camera access denied. Enable camera permission for VaultOTP in system settings.', true);
+        document.getElementById('scannerLoading').style.display = 'none';
+        return;
+      }
+
+      const video = document.getElementById('scannerVideo');
+      video.srcObject = scanStream;
+      try { await video.play(); } catch (e) {}
+      document.getElementById('scannerLoading').style.display = 'none';
+      scanLock = false;
+      scanRafId = requestAnimationFrame(scanFrame);
+    }
+
+    function scanFrame() {
+      if (!scanStream) return;
+      const video = document.getElementById('scannerVideo');
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const w = 420;
+        const scale = w / video.videoWidth;
+        const h = Math.round(video.videoHeight * scale);
+        if (h > 0) {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          ctx.drawImage(video, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const code = jsQR(imageData.data, w, h, { inversionAttempts: 'dontInvert' });
+
+          if (code && code.data && !scanLock) {
+            scanLock = true;
+            buzz(80);
+            handleScannedData(code.data);
+            return;
+          }
+        }
+      }
+      scanRafId = requestAnimationFrame(scanFrame);
+    }
+
+    function stopScanner() {
+      if (scanRafId) {
+        cancelAnimationFrame(scanRafId);
+        scanRafId = null;
+      }
+      if (scanStream) {
+        scanStream.getTracks().forEach(t => t.stop());
+        scanStream = null;
+      }
+      const video = document.getElementById('scannerVideo');
+      if (video) video.srcObject = null;
+      scanLock = false;
+    }
+
+    function cancelScanner() {
+      stopScanner();
+      document.getElementById('scannerOverlay').classList.remove('active');
+    }
+
+    function setScanHint(text, isError) {
+      const hint = document.getElementById('scanHint');
+      hint.textContent = text;
+      hint.classList.toggle('error', !!isError);
+    }
+
+    // Parse standard otpauth:// URIs used by Google/Microsoft/Authy QR codes
+    function parseOtpAuthUri(raw) {
+      try {
+        const url = new URL(raw);
+        if ((url.protocol || '').toLowerCase() !== 'otpauth:') return null;
+
+        const type = (url.host || url.hostname || '').toLowerCase();
+        if (type !== 'totp') throw new Error('Only TOTP codes are supported.');
+
+        const label = decodeURIComponent((url.pathname || '').replace(/^\/+/, ''));
+        const params = url.searchParams;
+        const secret = (params.get('secret') || '').replace(/[\s-]+/g, '').toUpperCase();
+
+        if (!/^[A-Z2-7]+=*$/.test(secret)) throw new Error('Invalid secret in QR code.');
+
+        let name = '', account = '';
+        const issuerParam = params.get('issuer');
+        if (issuerParam && label.toUpperCase().startsWith(issuerParam.toUpperCase() + ':')) {
+          name = issuerParam.trim();
+          account = label.slice(issuerParam.length + 1).trim();
+        } else if (label.includes(':')) {
+          const idx = label.indexOf(':');
+          name = label.slice(0, idx).trim();
+          account = label.slice(idx + 1).trim();
+        } else {
+          name = label.trim();
+        }
+
+        const digitsRaw = parseInt(params.get('digits'));
+        const periodRaw = parseInt(params.get('period'));
+        const algoRaw = (params.get('algorithm') || 'SHA1').toUpperCase().replace('-', '');
+        const algorithm = algoRaw === 'SHA256' ? 'SHA-256' : (algoRaw === 'SHA512' ? 'SHA-512' : 'SHA-1');
+
+        return {
+          name: name || 'Scanned Account',
+          account: account || '',
+          secret: secret,
+          digits: [6, 8].includes(digitsRaw) ? digitsRaw : 6,
+          period: [30, 60].includes(periodRaw) ? periodRaw : 30,
+          algorithm
+        };
+      } catch (e) {
+        return { error: e.message || 'Could not read this QR code.' };
+      }
+    }
+
+    function handleScannedData(data) {
+      const trimmed = data.trim();
+
+      let parsed = null;
+      if (/^otpauth:\/\//i.test(trimmed)) {
+        parsed = parseOtpAuthUri(trimmed);
+      } else {
+        // Raw Base32 secret printed as QR
+        const candidate = trimmed.replace(/[\s-]+/g, '').toUpperCase();
+        if (/^[A-Z2-7]+=*$/.test(candidate) && candidate.replace(/=+$/, '').length >= 8) {
+          parsed = { name: 'Scanned Account', account: '', secret: candidate, digits: 6, period: 30 };
+        } else {
+          parsed = { error: 'This QR code is not an authenticator key.' };
+        }
+      }
+
+      stopScanner();
+      document.getElementById('scannerOverlay').classList.remove('active');
+
+      if (parsed.error) {
+        setScanHint(parsed.error, true);
+        showToast(parsed.error);
+        return;
+      }
+
+      // Pre-fill the manual form so the user can review before saving
+      openAddModal();
+      document.getElementById('addName').value = parsed.name;
+      document.getElementById('addAccount').value = parsed.account;
+      document.getElementById('addSecret').value = parsed.secret;
+      document.getElementById('addDigits').value = String(parsed.digits);
+      document.getElementById('addPeriod').value = String(parsed.period);
+      showToast(`Scanned "${parsed.name}" — review and save.`);
+    }
+
+    // ---------- Sorting ----------
+    function onSortChange() {
+      localStorage.setItem('vaultotp_sort', document.getElementById('sortSelect').value);
+      renderCards();
+    }
+
+    function getSorted(list) {
+      const mode = localStorage.getItem('vaultotp_sort') || 'name_asc';
+      const arr = [...list];
+      if (mode === 'name_asc')  arr.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+      if (mode === 'name_desc') arr.sort((a, b) => (b.name || '').localeCompare(a.name || '', undefined, { sensitivity: 'base' }));
+      if (mode === 'newest')    arr.sort((a, b) => String(b.id || '').localeCompare(String(a.id || '')));
+      if (mode === 'oldest')    arr.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+      return arr;
+    }
+
+    // Render Function
+    async function renderCards() {
+      const grid = document.getElementById('vaultGrid');
+      const search = document.getElementById('searchInput').value.toLowerCase();
+
+      const filtered = getSorted(vault.accounts.filter(a =>
+        (a.name && a.name.toLowerCase().includes(search)) ||
+        (a.account && a.account.toLowerCase().includes(search))
+      ));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div>🛡️</div>
+            <h3>No Authenticator Keys Found</h3>
+            <p style="margin-top:6px;">Tap “Scan QR” or “Add Key” to get started.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = '';
+
+      for (const item of filtered) {
+        const period = item.period || 30;
+        const epoch = Math.floor(Date.now() / 1000) + (item.timeOffset || 0);
+        const remainingSeconds = period - (epoch % period);
+        const progressPercent = (remainingSeconds / period) * 100;
+        const otpCode = await generateTOTP(item.secret, period, item.digits || 6, item.timeOffset || 0, item.algorithm || 'SHA-1');
+        const digits = item.digits || 6;
+
+        const formattedCode = digits === 6
+          ? `${otpCode.slice(0, 3)} ${otpCode.slice(3)}`
+          : `${otpCode.slice(0, 4)} ${otpCode.slice(4)}`;
+
+        const card = document.createElement('div');
+        card.className = 'vault-card';
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="card-entity">
+              <div class="entity-icon editable" title="Change icon" onclick="openIconPicker('${item.id}')">${escapeHTML(item.icon || '🔐')}</div>
+              <div class="entity-details">
+                <h3>${escapeHTML(item.name)}</h3>
+                <p>${escapeHTML(item.account || 'TOTP Account')}</p>
+              </div>
+            </div>
+            <div class="timer-badge">
+              <span>⏱️</span> <span id="sec-${item.id}">${remainingSeconds}s</span>
+            </div>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-bar" id="bar-${item.id}" style="width: ${progressPercent}%;"></div>
+          </div>
+
+          <div class="otp-display-row">
+            <div class="otp-code" onclick="copyOTP('${otpCode}')" title="Click to copy">${formattedCode}</div>
+            <button class="copy-btn" onclick="copyOTP('${otpCode}')" title="Copy code">📋<span class="copy-label"> Copy Code</span></button>
+          </div>
+
+          <div class="status-line">
+            <span class="status-dot"></span> Valid Now
+          </div>
+
+          <!-- Inline Secret Key Drawer (masked until revealed) -->
+          <div class="inline-key-drawer" id="key-drawer-${item.id}">
+            <div class="inline-key-title">Secret Key</div>
+            <div class="inline-key-text">•••• •••• •••• ••••</div>
+          </div>
+
+          <!-- Actions Line -->
+          <div class="card-actions">
+            <button class="card-action-btn" onclick="advanceCode('${item.id}')">⚡ Next Code</button>
+            <div style="display:flex; gap:6px;">
+              <button class="card-action-btn" id="view-btn-${item.id}" onclick="toggleInlineKey('${item.id}')">👁️ View Key</button>
+              <button class="card-action-btn delete-btn" onclick="moveToRecycle('${item.id}')">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function renderRecycleBin() {
+      const container = document.getElementById('recycleListContainer');
+      if (!vault.recycleBin.length) {
+        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--text-muted);">Recycle Bin is empty.</div>`;
+        return;
+      }
+
+      container.innerHTML = vault.recycleBin.map(item => `
+        <div class="recycle-item">
+          <div class="recycle-meta">
+            <h4>${escapeHTML(item.name)}</h4>
+            <span>${escapeHTML(item.account || 'No account')}</span>
+          </div>
+          <div class="recycle-actions">
+            <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="restoreAccount('${item.id}')">Restore</button>
+            <button class="btn btn-danger-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="permanentlyDelete('${item.id}')">Delete Forever</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>'"]/g,
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // ============================================================
+    // AUTO-LOCK / PIN LOCK
+    // ============================================================
+    let autoLockTimer = null;
+    let failedUnlocks = 0;
+    let lockoutUntil = 0;
+
+    async function unlockVault() {
+      const pinEl = document.getElementById('unlockPin');
+      const errEl = document.getElementById('lockError');
+      const btn = document.getElementById('unlockBtn');
+      const pin = pinEl.value.trim();
+
+      if (Date.now() < lockoutUntil) {
+        errEl.textContent = `Too many attempts — wait ${Math.ceil((lockoutUntil - Date.now()) / 1000)}s.`;
+        return;
+      }
+      if (!pin) {
+        errEl.textContent = 'Enter your PIN.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Decrypting…';
+      try {
+        await decryptVault(pin);
+        failedUnlocks = 0;
+        pinEl.value = '';
+        errEl.textContent = '';
+        document.getElementById('lockScreen').classList.remove('active');
+        refreshSettingsUI();
+        renderCards();
+        armAutoLock();
+        showToast('Vault unlocked.');
+      } catch (e) {
+        failedUnlocks++;
+        pinEl.value = '';
+        buzz(120);
+        if (failedUnlocks >= 5) {
+          lockoutUntil = Date.now() + 30000;
+          failedUnlocks = 0;
+          errEl.textContent = 'Too many attempts — locked for 30 seconds.';
+        } else {
+          errEl.textContent = `Incorrect PIN. ${5 - failedUnlocks} attempt(s) left before a cool-down.`;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Unlock Vault';
+      }
+    }
+
+    function lockVault(manual) {
+      if (!lock.enabled) {
+        if (manual) showToast('Set a PIN in Settings to enable locking.');
+        return;
+      }
+      if (isLocked) return;
+
+      isLocked = true;
+      sessionKey = null;                       // drop the AES key
+      vault = { accounts: [], recycleBin: [] }; // drop plaintext secrets from memory
+      clearTimeout(autoLockTimer);
+      cancelScanner();
+      document.getElementById('vaultGrid').innerHTML = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('lockScreen').classList.add('active');
+      document.getElementById('lockError').textContent = '';
+      document.getElementById('unlockPin').value = '';
+      document.getElementById('lockBtn').style.display = 'none';
+      setTimeout(() => document.getElementById('unlockPin').focus(), 200);
+    }
+
+    function armAutoLock() {
+      clearTimeout(autoLockTimer);
+      if (!lock.enabled || isLocked || !prefs.autoLockMinutes) return;
+      autoLockTimer = setTimeout(() => lockVault(false), prefs.autoLockMinutes * 60 * 1000);
+    }
+
+    function noteActivity() {
+      if (lock.enabled && !isLocked) armAutoLock();
+    }
+
+    ['pointerdown', 'keydown', 'focus'].forEach(evt => document.addEventListener(evt, noteActivity, true));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') clearTimeout(autoLockTimer);
+      else noteActivity();
+    });
+
+    function showRestoreHelp() {
+      askText({
+        title: '🔑 Forgotten PIN?',
+        hint: 'For your security the PIN is never stored and the vault cannot be decrypted without it. Restore a backup instead, or clear this app\'s site data to start fresh (this erases the encrypted vault). Your keys are still in your backup file.',
+        type: 'text',
+        okLabel: 'I understand',
+        cancelLabel: 'Close',
+        validate: () => true
+      });
+    }
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+    function refreshSettingsUI() {
+      const badge = document.getElementById('pinStatusBadge');
+      const hint = document.getElementById('pinStatusHint');
+      const primary = document.getElementById('pinPrimaryBtn');
+      const removeBtn = document.getElementById('pinRemoveBtn');
+      const lockBtn = document.getElementById('lockBtn');
+
+      if (lock.enabled) {
+        badge.textContent = 'ON';
+        badge.className = 'badge-on';
+        hint.textContent = `AES-256-GCM · PBKDF2-SHA256 (${(lock.iterations || KDF_ITERATIONS).toLocaleString()} iterations).`;
+        primary.textContent = 'Change PIN';
+        removeBtn.style.display = '';
+        lockBtn.style.display = '';
+      } else {
+        badge.textContent = 'OFF';
+        badge.className = 'badge-off';
+        hint.textContent = 'Secrets are stored unencrypted in this browser profile.';
+        primary.textContent = 'Set PIN';
+        removeBtn.style.display = 'none';
+        lockBtn.style.display = 'none';
+      }
+
+      document.getElementById('autoLockSelect').value = String(prefs.autoLockMinutes);
+      document.getElementById('clipboardSelect').value = String(prefs.clipboardSeconds);
+      const versionEl = document.getElementById('versionLabel');
+      if (versionEl) versionEl.textContent = APP_VERSION;
+    }
+
+    function openSettings() {
+      refreshSettingsUI();
+      document.getElementById('settingsModal').classList.add('active');
+    }
+
+    function onAutoLockChange() {
+      prefs.autoLockMinutes = parseInt(document.getElementById('autoLockSelect').value) || 0;
+      savePrefs();
+      armAutoLock();
+      showToast(prefs.autoLockMinutes ? `Auto-lock set to ${prefs.autoLockMinutes} min.` : 'Auto-lock disabled.');
+    }
+
+    function onClipboardChange() {
+      prefs.clipboardSeconds = parseInt(document.getElementById('clipboardSelect').value) || 0;
+      savePrefs();
+      showToast(prefs.clipboardSeconds ? `Clipboard clears after ${prefs.clipboardSeconds}s.` : 'Clipboard auto-clear disabled.');
+    }
+
+    async function startPinSetup() {
+      if (lock.enabled) {
+        const current = await askText({
+          title: 'Confirm current PIN',
+          hint: 'Enter your existing PIN to change it.',
+          type: 'password',
+          okLabel: 'Continue',
+          validate: v => v.length > 0 || 'Enter your current PIN.'
+        });
+        if (current === null) return;
+        try {
+          await decryptVault(current);   // proves the PIN is right, refreshes sessionKey
+        } catch (e) {
+          showToast('Incorrect current PIN.');
+          return;
+        }
+      }
+
+      const first = await askText({
+        title: lock.enabled ? 'New PIN' : 'Set a vault PIN',
+        hint: 'At least 4 characters. This PIN encrypts your secrets with AES-256-GCM and is never stored anywhere.',
+        type: 'password',
+        okLabel: 'Next',
+        validate: v => v.trim().length >= 4 || 'PIN must be at least 4 characters.'
+      });
+      if (first === null) return;
+
+      const second = await askText({
+        title: 'Repeat PIN',
+        hint: 'Type the same PIN once more.',
+        type: 'password',
+        okLabel: 'Encrypt vault',
+        validate: v => v === first || 'PINs do not match.'
+      });
+      if (second === null) return;
+
+      const salt = randomB64(16);
+      sessionKey = await deriveKey(first.trim(), salt, KDF_ITERATIONS);
+      lock = { enabled: true, salt, iterations: KDF_ITERATIONS };
+      isLocked = false;
+      await saveVault();
+      refreshSettingsUI();
+      armAutoLock();
+      showToast('PIN enabled — your vault is now encrypted at rest.');
+    }
+
+    async function removePin() {
+      if (!lock.enabled) return;
+      const pin = await askText({
+        title: 'Remove PIN',
+        hint: 'Confirm your PIN. The vault will then be stored as plain text in this browser profile.',
+        type: 'password',
+        okLabel: 'Remove PIN',
+        validate: v => v.length > 0 || 'Enter your PIN.'
+      });
+      if (pin === null) return;
+      try {
+        await decryptVault(pin);
+      } catch (e) {
+        showToast('Incorrect PIN.');
+        return;
+      }
+      lock = { enabled: false, salt: null, iterations: KDF_ITERATIONS };
+      sessionKey = null;
+      isLocked = false;
+      await saveVault();
+      refreshSettingsUI();
+      showToast('PIN removed — vault stored without encryption.');
+    }
+
+    // ============================================================
+    // ENCRYPTED BACKUP (.votp)
+    // ============================================================
+    function openEncryptedExport() {
+      if (!vault.accounts.length) {
+        showToast('Vault is empty — nothing to export.');
+        return;
+      }
+      document.getElementById('backupPassword').value = '';
+      document.getElementById('backupError').textContent = '';
+      document.getElementById('backupPasswordModal').classList.add('active');
+    }
+
+    async function confirmBackupPassword() {
+      const password = document.getElementById('backupPassword').value;
+      const errEl = document.getElementById('backupError');
+      if (password.length < 8) {
+        errEl.textContent = 'Use at least 8 characters.';
+        return;
+      }
+      errEl.textContent = '';
+      const salt = randomB64(16);
+      const key = await deriveKey(password, salt, KDF_ITERATIONS);
+      const body = JSON.stringify({ app: 'VaultOTP', accounts: vault.accounts, recycleBin: [] });
+      const sealed = await sealWith(key, body);
+      const container = JSON.stringify({
+        app: 'VaultOTP',
+        kind: 'encrypted-backup',
+        v: 3,
+        enc: true,
+        kdf: { name: 'PBKDF2-SHA256', iterations: KDF_ITERATIONS, salt },
+        iv: sealed.iv,
+        ct: sealed.ct
+      }, null, 2);
+      closeModal('backupPasswordModal');
+      const fileName = `VaultOTP_Encrypted_${new Date().toISOString().slice(0, 10)}.votp`;
+      await sendBackupJSON(container, fileName);
+      showToast('Encrypted backup created.');
+    }
+
+    // ============================================================
+    // IN-APP PROMPT (window.prompt is unavailable in Electron)
+    // ============================================================
+    function askText(opts) {
+      const o = opts || {};
+      return new Promise(resolve => {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop active';
+        backdrop.style.zIndex = '450';
+        backdrop.innerHTML = `
+          <div class="modal-box" style="max-width: 420px;">
+            <h2>${escapeHTML(o.title || '')}</h2>
+            <p style="color: var(--text-muted); font-size:0.85rem; margin: 6px 0 14px; line-height:1.5;">${escapeHTML(o.hint || '')}</p>
+            <div class="form-group">
+              <input type="${o.type === 'password' ? 'password' : 'text'}" class="pin-input" style="letter-spacing: ${o.type === 'password' ? '6px' : '0'}; font-size: 1rem;" autocomplete="off">
+            </div>
+            <div class="lock-error"></div>
+            <div class="modal-footer">
+              <button class="btn" data-cancel>${escapeHTML(o.cancelLabel || 'Cancel')}</button>
+              <button class="btn btn-primary" data-ok>${escapeHTML(o.okLabel || 'Continue')}</button>
+            </div>
+          </div>`;
+        document.body.appendChild(backdrop);
+
+        const input = backdrop.querySelector('input');
+        const errEl = backdrop.querySelector('.lock-error');
+        const okBtn = backdrop.querySelector('[data-ok]');
+        const cancelBtn = backdrop.querySelector('[data-cancel]');
+
+        const finish = value => {
+          backdrop.remove();
+          resolve(value);
+        };
+
+        const submit = () => {
+          const value = input.value;
+          const check = o.validate ? o.validate(value) : true;
+          if (check !== true) {
+            errEl.textContent = String(check || 'Invalid value.');
+            return;
+          }
+          finish(value);
+        };
+
+        okBtn.addEventListener('click', submit);
+        cancelBtn.addEventListener('click', () => finish(null));
+        backdrop.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); submit(); }
+          if (e.key === 'Escape') { e.preventDefault(); finish(null); }
+        });
+        setTimeout(() => input.focus(), 80);
+      });
+    }
+
+    // ============================================================
+    // SHORTCUTS + SELF-TEST
+    // ============================================================
+    function openShortcuts() {
+      document.getElementById('shortcutsModal').classList.add('active');
+    }
+
+    async function runSelfTest() {
+      // RFC 6238 appendix B vectors (SHA-1, 8 digits, key "12345678901234567890")
+      const vectors = [
+        [59, '94287082'],
+        [1111111109, '07081804'],
+        [1111111111, '14050471'],
+        [1234567890, '89005924'],
+        [2000000000, '69279037'],
+        [20000000000, '65353130']
+      ];
+      const secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+      let passed = 0;
+      for (const [t, expected] of vectors) {
+        try {
+          const code = await totpAt(secret, { period: 30, digits: 8, algorithm: 'SHA-1', epochSeconds: t });
+          if (code === expected) passed++;
+        } catch (e) { /* counted as failure */ }
+      }
+      const ok = passed === vectors.length;
+      showToast(ok
+        ? `Self-test passed — ${passed}/${vectors.length} RFC 6238 vectors.`
+        : `Self-test FAILED — ${passed}/${vectors.length} RFC 6238 vectors.`);
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.modal-backdrop.active').forEach(el => el.classList.remove('active'));
+      if (document.getElementById('scannerOverlay').classList.contains('active')) cancelScanner();
+    }
+
+    function openModalSafe(id) {
+      if (isLocked) return;
+      document.getElementById(id).classList.add('active');
+    }
+
+    document.addEventListener('keydown', e => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      const typing = ['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable;
+
+      if (e.key === 'Escape') { closeAllModals(); return; }
+      if (isLocked || typing || e.ctrlKey || e.metaKey || e.altKey) return;
+
+      switch (e.key) {
+        case '/': e.preventDefault(); document.getElementById('searchInput').focus(); break;
+        case 'n': case 'N': e.preventDefault(); openModalSafe('addModal'); openAddModal(); break;
+        case 's': case 'S': e.preventDefault(); startScanner(); break;
+        case 'l': case 'L': e.preventDefault(); lockVault(true); break;
+        case ',': e.preventDefault(); openSettings(); break;
+        default: break;
+      }
+    });
+
+    // ============================================================
+    // REAL-TIME TIMER LOOP
+    // ============================================================
+    setInterval(() => {
+      if (isLocked) return;
+      let needsRefresh = false;
+
+      vault.accounts.forEach(acc => {
+        const period = acc.period || 30;
+        const epoch = Math.floor(Date.now() / 1000) + (acc.timeOffset || 0);
+        const rem = period - (epoch % period);
+        const secEl = document.getElementById(`sec-${acc.id}`);
+        const barEl = document.getElementById(`bar-${acc.id}`);
+
+        if (secEl) secEl.textContent = `${rem}s`;
+        if (barEl) {
+          barEl.style.width = `${(rem / period) * 100}%`;
+          barEl.style.background = rem <= 5 ? 'var(--danger)' : '';
+        }
+
+        if (rem >= period) needsRefresh = true;
+      });
+
+      if (needsRefresh) renderCards();
+    }, 1000);
+
+    // Splash dismissal
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+      if (splash) splash.remove();
+    }, 1800);
+
+    // Service worker (PWA / offline install). Silently ignored on file:// or in the native shell.
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => { /* offline mode unavailable */ });
+      });
+    }
+
+    // Initial Init
+    (async function init() {
+      await loadVault();
+      refreshSettingsUI();
+      document.getElementById('sortSelect').value = localStorage.getItem(SORT_KEY) || 'name_asc';
+
+      if (isLocked) {
+        document.getElementById('lockScreen').classList.add('active');
+        document.getElementById('lockBtn').style.display = 'none';
+        setTimeout(() => document.getElementById('unlockPin').focus(), 400);
+      } else {
+        renderCards();
+        armAutoLock();
+      }
+    })();
+  </script>
+</body>
+</html>

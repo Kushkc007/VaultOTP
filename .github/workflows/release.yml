@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+
+  web:
+    name: Web bundle
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Build
+        run: npm run build
+      - name: Package web + single file
+        run: |
+          cd web
+          zip -r ../VaultOTP-web.zip . -x '.nojekyll'
+          cd ..
+          cp web/VaultOTP.html VaultOTP-single-file.html
+      - name: Checksums
+        run: sha256sum VaultOTP-web.zip VaultOTP-single-file.html > VaultOTP-web.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-artifacts
+          path: |
+            VaultOTP-web.zip
+            VaultOTP-single-file.html
+            VaultOTP-web.sha256
+
+  windows:
+    name: Windows EXE
+    runs-on: windows-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Build portable EXE + installer
+        run: npm run build:desktop
+        env:
+          # Optional: signing certificate (base64 .pfx) and password
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checksums
+        shell: bash
+        run: |
+          cd dist/desktop
+          sha256sum *.exe > SHA256SUMS.txt || true
+          cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: |
+            dist/desktop/*.exe
+            dist/desktop/SHA256SUMS.txt
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform + build tools
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Build APK
+        env:
+          VAULTOTP_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          VAULTOTP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          VAULTOTP_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          VAULTOTP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: npm run build:android
+
+      - name: Rename artefacts
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p out
+          if [ -f mobile/android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp mobile/android/app/build/outputs/apk/release/app-release.apk "out/VaultOTP-${VERSION}.apk"
+          fi
+          if [ -f mobile/android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp mobile/android/app/build/outputs/apk/debug/app-debug.apk "out/VaultOTP-${VERSION}-debug.apk"
+          fi
+          cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: out/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-checksums
+          path: out/SHA256SUMS.txt
+
+  macos-linux:
+    name: macOS + Linux desktop
+    runs-on: ${{ matrix.os }}
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Build desktop app
+        run: npm run build:desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            dist/desktop/*.dmg
+            dist/desktop/*.AppImage
+          if-no-files-found: ignore
+
+  publish:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: [web, windows, android, macos-linux]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.exe' -o -name '*.apk' -o -name '*.zip' -o -name '*.html' -o -name '*.dmg' -o -name '*.AppImage' -o -name 'SHA256SUMS.txt' -o -name '*.sha256' \) -exec cp {} release-assets/ \;
+          ls -la release-assets
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VaultOTP ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          files: release-assets/*
+          body: |
+            ## VaultOTP ${{ github.ref_name }}
+
+            | Platform | File |
+            |---|---|
+            | 🌐 Web (all files) | `VaultOTP-web.zip` |
+            | 🌐 Web (single file) | `VaultOTP-single-file.html` |
+            | 🖥️ Windows (portable) | `VaultOTP-*-portable.exe` |
+            | 🖥️ Windows (installer) | `VaultOTP-Setup-*.exe` |
+            | 📱 Android | `VaultOTP-*.apk` |
+            | 🍎 macOS | `VaultOTP-*.dmg` |
+            | 🐧 Linux | `VaultOTP-*.AppImage` |
+
+            Verify downloads with the bundled `SHA256SUMS.txt`.
+
+            **Everyone runs the same `src/app.html`** — the web app, EXE and APK contain identical
+            TOTP code. `npm test` validates it against the official RFC 6238 vectors.
+    permissions:
+      contents: write
