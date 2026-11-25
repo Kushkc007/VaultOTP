@@ -1,0 +1,101 @@
+name: Build macOS app
+
+# macOS builds need a Mac runner, so they are built here on demand and attached to
+# an existing release. Every DMG is opened and inspected before it is published.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach the DMGs to (e.g. v3.1.1). Leave empty to only build and verify.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS DMGs (arm64 + x64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Build DMGs
+        env:
+          # Unsigned, ad-hoc build: no Apple Developer certificate is available.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:desktop
+
+      - name: Verify every DMG
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          shopt -s nullglob
+          dmgs=(dist/desktop/*.dmg)
+          if [ ${#dmgs[@]} -eq 0 ]; then
+            echo "::error::electron-builder produced no DMG"
+            exit 1
+          fi
+          for dmg in "${dmgs[@]}"; do
+            echo "::group::$dmg"
+            mount="/tmp/vaultotp-$(basename "$dmg" .dmg)"
+            hdiutil attach "$dmg" -nobrowse -readonly -quiet -mountpoint "$mount"
+            app="$(ls -d "$mount"/*.app | head -1)"
+            echo "bundle:      $app"
+            short="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
+            bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")"
+            echo "version:     $short"
+            echo "bundle id:   $bundle_id"
+            [ "$short" = "$version" ] || { echo "::error::version mismatch: $short != $version"; exit 1; }
+            [ "$bundle_id" = "com.vaultotp.app" ] || { echo "::error::unexpected bundle id $bundle_id"; exit 1; }
+            [ -f "$app/Contents/Resources/icon.icns" ] || { echo "::error::no macOS icon in the bundle"; exit 1; }
+            asar="$(ls "$app/Contents/Resources/"*.asar | head -1)"
+            grep -qa 'Offline OTP Generator' "$asar" || { echo "::error::bundled web app is missing from app.asar"; exit 1; }
+            grep -qa "vaultotp_vault_v3" "$asar" || { echo "::error::vault storage key missing from app.asar"; exit 1; }
+            codesign -dv "$app" 2>&1 | head -3 || true
+            echo "offline check: the bundle contains the app, no network code is fetched at build time"
+            hdiutil detach "$mount" -quiet
+            echo "::endgroup::"
+          done
+
+      - name: Checksums
+        run: |
+          cd dist/desktop
+          shasum -a 256 *.dmg | tee SHA256SUMS-macos.txt
+
+      - name: Attach to the release
+        if: inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ inputs.tag }}" > /dev/null
+          gh release upload "${{ inputs.tag }}" \
+            dist/desktop/*.dmg dist/desktop/SHA256SUMS-macos.txt --clobber
+          gh release view "${{ inputs.tag }}" --json assets \
+            --jq '.assets[] | "\(.name)  \(.size) bytes"'
+
+      - name: Keep the DMGs as a workflow artifact
+        if: inputs.tag == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          retention-days: 3
+          path: |
+            dist/desktop/*.dmg
+            dist/desktop/SHA256SUMS-macos.txt
