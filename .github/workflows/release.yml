@@ -79,6 +79,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-exe
+          retention-days: 3
           path: |
             dist/desktop/*.exe
             dist/desktop/SHA256SUMS.txt
@@ -98,14 +99,13 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept SDK licences
-        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
-
+      # The runner image already ships the Android SDK; android-actions/setup-android
+      # fails on its own licence step, so talk to sdkmanager directly.
       - name: Install SDK platform + build tools
         run: |
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          yes | sdkmanager --licenses > /dev/null || true
           sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install dependencies
@@ -134,6 +134,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
+          retention-days: 3
           path: out/*.apk
       - uses: actions/upload-artifact@v4
         with:
@@ -163,6 +164,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.os }}
+          retention-days: 3
           path: |
             dist/desktop/*.dmg
             dist/desktop/*.AppImage

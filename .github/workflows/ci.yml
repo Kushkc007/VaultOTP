@@ -64,4 +64,4 @@ jobs:
           path: |
             web/**
             !web/.nojekyll
-          retention-days: 14
+          retention-days: 3
