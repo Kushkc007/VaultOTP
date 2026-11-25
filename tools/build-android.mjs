@@ -46,7 +46,10 @@ if (!existsSync(join(MOBILE, 'node_modules', '@capacitor', 'cli'))) {
 run('npx', ['cap', 'sync', 'android'], MOBILE);
 
 // 4) gradle
-const gradlew = isWin ? 'gradlew.bat' : './gradlew';
+// On POSIX the wrapper is run through sh so a missing execute bit (common when the
+// repository is checked out on Windows) cannot break the build.
+const gradlew = isWin ? 'gradlew.bat' : 'gradlew';
+const gradlewRunner = isWin ? gradlew : 'sh';
 const env = {};
 
 if (!process.env.JAVA_HOME) {
@@ -93,9 +96,10 @@ if (signingConfigured) {
 }
 
 try {
-  run(gradlew, ['assembleDebug'], ANDROID, env);
+  const gradle = (...tasks) => run(gradlewRunner, [gradlew, ...tasks], ANDROID, env);
+  gradle('assembleDebug');
   if (signingConfigured) {
-    run(gradlew, ['assembleRelease'], ANDROID, env);
+    gradle('assembleRelease');
   } else {
     console.log('\n[info] skipping assembleRelease (no VAULTOTP_KEYSTORE_* environment variables)');
   }
