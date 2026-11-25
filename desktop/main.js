@@ -101,7 +101,7 @@ function buildMenu() {
         {
           label: 'How VaultOTP works',
           click: () =>
-            shell.openExternal('https://github.com/Kushkc007/vaultotp/blob/main/docs/HOW-IT-WORKS.md'),
+            shell.openExternal('https://github.com/Kushkc007/VaultOTP/blob/main/docs/HOW-IT-WORKS.md'),
         },
       ],
     },
