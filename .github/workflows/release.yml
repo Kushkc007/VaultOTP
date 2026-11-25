@@ -229,4 +229,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"             --jq '.artifacts[].id' | xargs -r -n1             gh api -X DELETE "/repos/${{ github.repository }}/actions/artifacts/{}" || true
+          for id in $(gh api "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" --jq '.artifacts[].id'); do
+            gh api -X DELETE "/repos/${{ github.repository }}/actions/artifacts/$id" > /dev/null || true
+          done
+          echo "artifacts left in the repository:"
+          gh api "/repos/${{ github.repository }}/actions/artifacts" --jq '.total_count'
