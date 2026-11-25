@@ -34,8 +34,9 @@ const run = (cmd, args, cwd, env = {}) => {
   }
 };
 
-// 1) web assets
+// 1) web assets, then the Android launcher icons and splash screens
 run(process.execPath, [join(ROOT, 'tools', 'build.mjs')], ROOT);
+run(process.execPath, [join(ROOT, 'tools', 'gen-icons.mjs')], ROOT);
 
 // 2) mobile dependencies
 if (!existsSync(join(MOBILE, 'node_modules', '@capacitor', 'cli'))) {
