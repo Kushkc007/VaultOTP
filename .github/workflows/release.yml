@@ -203,6 +203,6 @@ jobs:
             Verify downloads with the bundled `SHA256SUMS.txt`.
 
             **Everyone runs the same `src/app.html`** — the web app, EXE and APK contain identical
-            TOTP code. `npm test` validates it against the official RFC 6238 vectors.
+            authenticator code. `npm test` validates it against the official RFC 6238 vectors.
     permissions:
       contents: write

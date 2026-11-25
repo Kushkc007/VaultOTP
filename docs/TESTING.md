@@ -10,7 +10,7 @@ npm test
 
 | File | What it proves |
 |---|---|
-| `tests/totp.test.mjs` | The eight official RFC 6238 vectors for SHA‑1, SHA‑256 and SHA‑512, zero-padding, 30 s / 60 s periods, 8-digit codes, Base32 edge cases and >32-bit counters |
+| `tests/core.test.mjs` | The eight official RFC 6238 vectors for SHA‑1, SHA‑256 and SHA‑512, zero-padding, 30 s / 60 s periods, 8-digit codes, Base32 edge cases and >32-bit counters |
 | `tests/repo.test.mjs` | Repository hygiene: no `eval` / `new Function` / `document.write`, no remote asset URLs, no committed credentials or demo secrets, and every `onclick="…"` handler and `getElementById` id in `src/app.html` exists |
 
 CI runs the same suite on Node 20 and 22 (`.github/workflows/ci.yml`) plus CodeQL.

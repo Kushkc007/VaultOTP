@@ -4,12 +4,12 @@ This document explains, end to end, what happens between "my bank shows me a QR 
 
 ---
 
-## 1. What a TOTP secret actually is
+## 1. What an authenticator secret actually is
 
 When a service enables two‑factor authentication it generates a **shared secret** — 16–32 random bytes, printed in **Base32** (`A–Z`, `2–7`) so humans can type it. Google Authenticator, 1Password, Aegis and VaultOTP all store that same string. It is usually delivered as a QR code containing an `otpauth://` URI:
 
 ```
-otpauth://totp/GitHub:you@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub&digits=6&period=30&algorithm=SHA1
+otpauth://GitHub:you@example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub&digits=6&period=30&algorithm=SHA1
         │      │        │                │                              │          │          │
         │      │        │                │                              │          │          └─ default SHA-1
         │      │        │                │                              │          └─ 30-second step
@@ -78,7 +78,7 @@ Everything lives in one `localStorage` entry, key `vaultotp_vault_v3`.
 { "v": 3, "accounts": [ { "id": "acc_…", "name": "GitHub", "secret": "…", "digits": 6, "period": 30, "algorithm": "SHA-1", "icon": "🐙" } ], "recycleBin": [] }
 ```
 
-Plain text, same profile/sandbox only. Convenient, and exactly how most open‑source TOTP web apps behave — but anyone with access to your unlocked browser profile (or a disk image) can read it.
+Plain text, same profile/sandbox only. Convenient, and exactly how most open‑source authenticator web apps behave — but anyone with access to your unlocked browser profile (or a disk image) can read it.
 
 ### With a PIN (recommended)
 
@@ -124,7 +124,7 @@ On import VaultOTP: parses the container → decrypts if needed → validates ev
 ## 5. QR scanning
 
 * **Web / Android / desktop:** `getUserMedia` → video frames are drawn to a `<canvas>` at 420 px wide → `jsQR` decodes luminance data → the resulting string is parsed.
-* Accepted payloads: `otpauth://totp/…` and a bare Base32 secret. `otpauth://hotp/…` is rejected (counter‑based codes need a moving counter we cannot observe).
+* Accepted payloads: an `otpauth://` URI and a bare Base32 secret. Counter-based (`hotp`) URIs are rejected (counter‑based codes need a moving counter we cannot observe).
 * Scanning never uploads frames; the canvas is local and discarded each tick.
 * The form is **pre‑filled, not saved** — you review the name/secret before anything is written.
 
@@ -154,7 +154,7 @@ There is exactly one copy of the application logic. `web/`, `mobile/www/` and `d
 
 Two layers:
 
-1. **`npm test`** extracts the TOTP core from the HTML and checks it against the RFC 6238 vectors for SHA‑1, SHA‑256 and SHA‑512, plus repository hygiene (no `eval`, no remote URLs, no credentials, no dangling UI handlers).
+1. **`npm test`** extracts the code core from the HTML and checks it against the RFC 6238 vectors for SHA‑1, SHA‑256 and SHA‑512, plus repository hygiene (no `eval`, no remote URLs, no credentials, no dangling UI handlers).
 2. **⚙️ → Run self‑test** runs the same RFC vectors inside the running app, so an installed EXE/APK can prove its crypto is intact on that device.
 
 If both pass, the digits you see are the digits every other RFC‑compliant authenticator would show.

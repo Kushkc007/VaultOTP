@@ -88,10 +88,10 @@ async function writeIcons(dir) {
 
 // ---------------------------------------------------------------- PWA
 const MANIFEST = {
-  name: 'VaultOTP — Authenticator',
+  name: 'VaultOTP — OTP Generator',
   short_name: 'VaultOTP',
   description:
-    'Private, fully offline TOTP authenticator. No accounts, no cloud, no telemetry.',
+    'Private, fully offline OTP generator. No accounts, no cloud, no telemetry.',
   start_url: './index.html',
   scope: './',
   display: 'standalone',

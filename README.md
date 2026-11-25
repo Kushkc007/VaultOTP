@@ -8,9 +8,9 @@
 [![Tests](https://img.shields.io/badge/RFC%206238-30%20tests%20passing-10b981.svg)](tests)
 [![No telemetry](https://img.shields.io/badge/telemetry-none-10b981.svg)](docs/PRIVACY.md)
 
-**A private, fully offline TOTP authenticator — one codebase, three products: Web app, Windows EXE and Android APK.**
+**A private, fully offline OTP generator — one codebase, three products: Web app, Windows EXE and Android APK.**
 
-VaultOTP generates the same 6‑digit (or 8‑digit) two‑factor codes as Google Authenticator, Authy, Microsoft Authenticator or Aegis — but it has no account, no sync server, no analytics and no third‑party requests. Open it once, and it works forever, even in airplane mode.
+VaultOTP generates the same 6‑digit (or 8‑digit) two‑factor codes as the big authenticator apps — but it has no account, no sync server, no analytics and no third‑party requests. Open it once, and it works forever, even in airplane mode.
 
 ```
 ┌──────────────┬─────────────────────┬────────────────────────┐
@@ -76,7 +76,7 @@ Most TOTP apps ask you to trust a cloud. VaultOTP takes the opposite approach:
 ## Features
 
 **Core**
-- 🔐 TOTP (RFC 6238) with **SHA‑1 / SHA‑256 / SHA‑512**, 6 or 8 digits, 30 s or 60 s periods
+- 🔐 Time-based codes (RFC 6238) with **SHA‑1 / SHA‑256 / SHA‑512**, 6 or 8 digits, 30 s or 60 s periods
 - 📷 **QR scanning** for `otpauth://` codes (camera on web/Android, file upload fallback on desktop)
 - 🔗 Paste an `otpauth://` URI straight into the secret field — it is parsed and validated
 - 🧮 Codes are constant‑time correct: the exact RFC 6238 test vectors run as an in‑app self‑test
@@ -300,7 +300,7 @@ Yes — export them from the Google Authenticator "transfer accounts" QR, scan i
 No. The only optional network use is the browser's service worker cache on first install.
 
 **What if the codes are wrong?**
-Your system clock must be within ~30 s of real time. Codes are computed from the device clock, exactly like every other TOTP app.
+Your system clock must be within ~30 s of real time. Codes are computed from the device clock, exactly like every other authenticator app.
 
 More: **[docs/FAQ.md](docs/FAQ.md)**.
 

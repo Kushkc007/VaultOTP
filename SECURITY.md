@@ -33,7 +33,7 @@ Please never include real secrets, real OTP seeds or personal account data in a 
 | Offline brute force of the PIN | PBKDF2 iteration cost; use a long PIN/passphrase for high-value vaults |
 | Shoulder-surfing secrets in the UI | Secrets masked in the DOM until revealed; codes never shown in notifications |
 | Clipboard snooping by other apps | Clipboard auto-wipe after 15/30/60 s (configurable) |
-| Malicious QR payload (HTML/JS in a QR code) | Payloads are validated as `otpauth://totp` or Base32; only field values are stored, all rendering is HTML-escaped |
+| Malicious QR payload (HTML/JS in a QR code) | Payloads are validated as an `otpauth://` URI or Base32; only field values are stored, all rendering is HTML-escaped |
 | Stored XSS from imported icons/labels | `escapeHTML()` on every interpolated value; custom emoji stripped of HTML-significant characters; no `eval`/`new Function` (test-enforced) |
 | Exfiltration over the network from the desktop app | All non-`file:`/`data:`/`blob:` requests cancelled in `webRequest` |
 | Remote content / phishing redirects in the EXE | `will-navigate`, `will-redirect`, `setWindowOpenHandler`, `will-attach-webview` all blocked |
@@ -46,11 +46,11 @@ Please never include real secrets, real OTP seeds or personal account data in a 
 | Threat | Note |
 |---|---|
 | **Forgotten PIN** | By design the key does not exist anywhere. Restore from a backup instead. |
-| Malware with your user privileges (keylogger, memory scraper) | Any TOTP app on a compromised host is readable. Use a clean device. |
+| Malware with your user privileges (keylogger, memory scraper) | Any authenticator app on a compromised host is readable. Use a clean device. |
 | A forged/compromised build | Verify the release artefacts; build from source with `npm run build` if in doubt. |
 | Someone who knows your PIN | The PIN is the security boundary — treat it as a passphrase. |
 | Compromised dependency during build | Dependencies are dev-only (electron, electron-builder, resvg); pin versions and review `npm ls`. |
-| Server-side TOTP weaknesses (phishing, real-time code relay) | TOTP is phishing-resistant only with hardware keys/WebAuthn. Prefer passkeys where a service offers them. |
+| Server-side code weaknesses (phishing, real-time code relay) | Time-based codes are phishing-resistant only with hardware keys/WebAuthn. Prefer passkeys where a service offers them. |
 | Physical access to an unlocked, PIN-less vault | Set a PIN. |
 | Losing the device without a backup | Export `.votp` backups regularly. |
 

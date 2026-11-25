@@ -20,7 +20,7 @@ npm run dev       # http://localhost:4173
 4. **No `eval`, `new Function` or `document.write`.**
 5. **Escape everything that reaches the DOM.** Use `escapeHTML()` for any interpolated string; never interpolate secrets into markup.
 6. **Keep the crypto boring.** Use `crypto.subtle` — never hand-roll AES, KDFs or HMAC.
-7. **Never commit secrets.** No keystores, no tokens, no real TOTP seeds — not even in tests or docs.
+7. **Never commit secrets.** No keystores, no tokens, no real authenticator seeds — not even in tests or docs.
 
 ## What to change where
 

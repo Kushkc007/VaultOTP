@@ -1,6 +1,6 @@
 {
   "name": "vaultotp-mobile",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "description": "VaultOTP mobile shell (Capacitor) — wraps the offline web app for Android/iOS.",
   "license": "MIT",

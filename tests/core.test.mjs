@@ -1,5 +1,5 @@
 /**
- * RFC 6238 / RFC 4226 conformance tests for the TOTP core that ships inside
+ * RFC 6238 / RFC 4226 conformance tests for the code core that ships inside
  * src/app.html. The core is deliberately free of DOM access and is delimited by
  * `/* @core:start *\/` … `/* @core:end *\/` so it can be executed here as-is.
  */
@@ -13,11 +13,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(ROOT, 'src', 'app.html'), 'utf8');
 
 const match = html.match(/\/\* @core:start \*\/([\s\S]*?)\/\* @core:end \*\//);
-assert.ok(match, 'TOTP core markers are missing from src/app.html');
+assert.ok(match, 'core markers are missing from src/app.html');
 
 // Evaluate the exact code the browser runs.
-const core = new Function(`${match[1]}; return { base32ToBuffer, totpAt };`)();
-const { totpAt, base32ToBuffer } = core;
+const core = new Function(`${match[1]}; return { base32ToBuffer, codeAt };`)();
+const { codeAt, base32ToBuffer } = core;
 
 /** Minimal RFC 4648 Base32 encoder used to build the RFC 6238 test keys. */
 function base32Encode(ascii) {
@@ -54,21 +54,21 @@ assert.equal(SECRET_SHA1, CANONICAL_SECRET, 'base32 encoder sanity check');
 
 for (const [time, sha1, sha256, sha512] of VECTORS) {
   test(`RFC 6238 SHA-1 vector T=${time}`, async () => {
-    const code = await totpAt(SECRET_SHA1, {
+    const code = await codeAt(SECRET_SHA1, {
       period: 30, digits: 8, algorithm: 'SHA-1', epochSeconds: time,
     });
     assert.equal(code, sha1);
   });
 
   test(`RFC 6238 SHA-256 vector T=${time}`, async () => {
-    const code = await totpAt(SECRET_SHA256, {
+    const code = await codeAt(SECRET_SHA256, {
       period: 30, digits: 8, algorithm: 'SHA-256', epochSeconds: time,
     });
     assert.equal(code, sha256);
   });
 
   test(`RFC 6238 SHA-512 vector T=${time}`, async () => {
-    const code = await totpAt(SECRET_SHA512, {
+    const code = await codeAt(SECRET_SHA512, {
       period: 30, digits: 8, algorithm: 'SHA-512', epochSeconds: time,
     });
     assert.equal(code, sha512);
@@ -76,7 +76,7 @@ for (const [time, sha1, sha256, sha512] of VECTORS) {
 }
 
 test('6-digit codes are zero padded', async () => {
-  const code = await totpAt(SECRET_SHA1, {
+  const code = await codeAt(SECRET_SHA1, {
     period: 30, digits: 6, algorithm: 'SHA-1', epochSeconds: 1111111109,
   });
   assert.equal(code.length, 6);
@@ -85,14 +85,14 @@ test('6-digit codes are zero padded', async () => {
 
 test('period 60 produces a different code from period 30', async () => {
   const opts = { digits: 6, algorithm: 'SHA-1', epochSeconds: 1234567890 };
-  const a = await totpAt(SECRET_SHA1, { ...opts, period: 30 });
-  const b = await totpAt(SECRET_SHA1, { ...opts, period: 60 });
+  const a = await codeAt(SECRET_SHA1, { ...opts, period: 30 });
+  const b = await codeAt(SECRET_SHA1, { ...opts, period: 60 });
   assert.notEqual(a, b);
 });
 
 test('counter beyond 32 bits is encoded correctly', async () => {
   // Year 2100+ exercises the high 32 bits of the moving counter.
-  const code = await totpAt(SECRET_SHA1, {
+  const code = await codeAt(SECRET_SHA1, {
     period: 30, digits: 8, algorithm: 'SHA-1', epochSeconds: 4102444800,
   });
   assert.match(code, /^\d{8}$/);

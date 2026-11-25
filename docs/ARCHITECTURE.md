@@ -5,7 +5,7 @@ VaultOTP is deliberately boring: one HTML file holds the whole UI and all crypto
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
 │                          src/app.html                                 │
-│  markup · CSS (self-hosted fonts) · state · TOTP core · UI logic       │
+│  markup · CSS (self-hosted fonts) · state · code core · UI logic       │
 │  storage container v3 (plaintext or PBKDF2+AES-GCM)                    │
 └───────────────┬───────────────────────────────┬───────────────────────┘
                 │  tools/build.mjs              │
@@ -33,7 +33,7 @@ VaultOTP is deliberately boring: one HTML file holds the whole UI and all crypto
 
 | Layer | File(s) | Responsibility |
 |---|---|---|
-| Application | `src/app.html` | Rendering, state, TOTP, QR parsing, encryption, settings, keyboard UX |
+| Application | `src/app.html` | Rendering, state, code generation, QR parsing, encryption, settings, keyboard UX |
 | Build | `tools/build.mjs` | Copies/inlines assets, renders PWA icons, generates manifest + service worker, syncs `mobile/www` |
 | Web shell | browser | PWA install, service worker cache, Web Share for backups |
 | Desktop shell | `desktop/main.js` | Window, menu, sandbox, request filtering, permission policy |
@@ -108,7 +108,7 @@ Trade‑off: the file is large (≈420 KB with the QR decoder and fonts inlined)
 ## Test strategy
 
 ```
-tests/totp.test.mjs   → extracts /* @core */ from src/app.html, runs RFC 6238 SHA-1/256/512
+tests/core.test.mjs   → extracts /* @core */ from src/app.html, runs RFC 6238 SHA-1/256/512
                         vectors, 6/8-digit padding, period 60, >32-bit counters, base32 errors
 tests/repo.test.mjs   → no eval/new Function/document.write, no remote URLs, no credentials,
                         no demo secrets, every inline handler + getElementById resolves

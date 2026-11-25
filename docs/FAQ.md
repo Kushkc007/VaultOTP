@@ -18,7 +18,7 @@ Yes — TOTP is standardised (RFC 6238). Same secret + same clock = same code. V
 
 * **From a backup file:** Export → Import.
 * **From a QR:** Scan the service's QR code (or the "transfer accounts" QR from Google Authenticator).
-* **Manually:** paste the Base32 secret, or paste the whole `otpauth://totp/...` URI into the secret field.
+* **Manually:** paste the Base32 secret, or paste the whole `otpauth://` URI into the secret field.
 
 ### Where do I find the secret if the service only shows a QR?
 
@@ -74,6 +74,6 @@ sha256sum web/index.html     # compare with the SHA printed by tools/build.mjs
 
 Yes — see [CONTRIBUTING.md](../CONTRIBUTING.md); localisation extraction is on the roadmap.
 
-### Is TOTP enough security?
+### Are time-based codes secure enough?
 
 TOTP is far better than a password alone but is phishable (a fake site can relay a code in real time). Where a service supports passkeys/WebAuthn, prefer those; use VaultOTP where it does not.

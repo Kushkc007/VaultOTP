@@ -3,6 +3,19 @@
 All notable changes to VaultOTP are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/).
 
+## [3.1.1] — 2025-11-25
+
+Naming and wording release.
+
+### Changed
+- Product naming is now **“OTP generator”** everywhere it is visible: window title, PWA manifest name and
+  description, meta description, package description and README. The app is still called **VaultOTP**.
+- Removed the protocol acronym from all user-facing text, docs and code comments. Encryption, storage keys
+  and behaviour are unchanged — existing vaults keep working.
+- Internal core functions renamed (`generateCode` / `codeAt`), core tests moved to `tests/core.test.mjs`.
+- Key-URI parsing now rejects only counter-based entries instead of whitelisting one type, so any standard
+  `otpauth://` code still imports.
+
 ## [3.1.0] — 2025-11-25
 
 Layout release: the vault now uses the whole window instead of leaving large side gutters.
@@ -26,7 +39,7 @@ First public, GitHub-ready release. Same UI as the prototype, with the storage, 
 - **Auto-lock** (1/3/5/15 min or never) plus a one-click Lock button.
 - **Encrypted backups** (`.votp`) protected by a separate backup password.
 - **Clipboard auto-wipe** (15/30/60 s), configurable.
-- **SHA-256 / SHA-512 TOTP** support in addition to SHA-1.
+- **SHA-256 / SHA-512** support in addition to SHA-1.
 - **In-app self-test** running the RFC 6238 vectors on the device.
 - **Keyboard shortcuts** (`/`, `N`, `S`, `L`, `,`, `Esc`) and a shortcuts dialog.
 - **PWA**: web manifest, service worker, installable, fully offline.
@@ -65,7 +78,7 @@ First public, GitHub-ready release. Same UI as the prototype, with the storage, 
 ## [1.0.0] — 2025-08 (prototype, unpublished)
 
 ### Added
-- Initial single-file TOTP authenticator with Base32 + WebCrypto HMAC-SHA1.
+- Initial single-file authenticator with Base32 + WebCrypto HMAC-SHA1.
 
 [3.0.0]: https://github.com/Kushkc007/VaultOTP/releases/tag/v3.0.0
 [2.0.0]: https://github.com/Kushkc007/VaultOTP

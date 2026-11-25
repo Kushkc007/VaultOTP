@@ -8,7 +8,7 @@ VaultOTP is built so that "we do not collect anything" is a structural fact, not
 
 | Data | Sent anywhere? |
 |---|---|
-| Secrets / TOTP keys | Never |
+| Secrets / authenticator keys | Never |
 | Generated codes | Never |
 | Account names / e-mails | Never |
 | Camera frames during scanning | Never — decoded in-page, frame discarded |

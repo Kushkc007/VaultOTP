@@ -1,11 +1,11 @@
 {
   "name": "vaultotp",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "main": "desktop/main.js",
-  "description": "VaultOTP — a private, fully offline TOTP authenticator for the web, Windows desktop and Android.",
+  "description": "VaultOTP — a private, fully offline OTP generator for the web, Windows desktop and Android.",
   "keywords": [
-    "totp",
+    "otp",
     "authenticator",
     "2fa",
     "otp",
@@ -30,7 +30,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs && node tools/serve.mjs",
-    "test": "node --test tests/totp.test.mjs tests/repo.test.mjs",
+    "test": "node --test tests/core.test.mjs tests/repo.test.mjs",
     "icons": "node tools/gen-icons.mjs",
     "build:desktop": "node tools/build.mjs && electron-builder --config desktop/electron-builder.yml",
     "build:android": "node tools/build.mjs && node tools/build-android.mjs",

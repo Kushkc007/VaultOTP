@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#07090e">
-  <title>VaultOTP — Offline TOTP Authenticator</title>
-  <meta name="description" content="VaultOTP is a private, fully offline TOTP authenticator for web, Windows desktop and Android. No accounts, no cloud, no tracking.">
+  <title>VaultOTP — Offline OTP Generator</title>
+  <meta name="description" content="VaultOTP is a private, fully offline OTP generator for web, Windows desktop and Android. No accounts, no cloud, no tracking.">
   <meta name="color-scheme" content="dark">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; form-action 'none'; base-uri 'none'">
@@ -1130,7 +1130,7 @@
     </div>
   </div>
 
-  <!-- Modal: Add Authenticator Key -->
+  <!-- Modal: Add Key -->
   <div class="modal-backdrop" id="addModal">
     <div class="modal-box">
       <h2>🔐 Add Secret Key</h2>
@@ -1334,7 +1334,7 @@
             <span class="setting-label">Version</span>
             <span class="setting-hint">VaultOTP is 100% offline — no accounts, no cloud, no telemetry.</span>
           </div>
-          <span class="badge-on" id="versionLabel">3.1.0</span>
+          <span class="badge-on" id="versionLabel">3.1.1</span>
         </div>
         <div class="modal-footer" style="margin-top:6px;">
           <button class="btn" onclick="openShortcuts()">⌨️ Shortcuts</button>
@@ -1387,7 +1387,7 @@
     // ============================================================
     // STATE STORE — v3 container with optional PIN encryption
     // ============================================================
-    const APP_VERSION = '3.1.0';
+    const APP_VERSION = '3.1.1';
     const STORAGE_KEY = 'vaultotp_vault_v3';
     const PREFS_KEY = 'vaultotp_prefs_v1';
     const SORT_KEY = 'vaultotp_sort';
@@ -1910,7 +1910,7 @@
         <label class="pick-item">
           <input type="checkbox" class="exp-chk" value="${escapeHTML(a.id)}" checked onchange="updateExportCount()">
           <span class="pick-icon">${escapeHTML(a.icon || '🔐')}</span>
-          <span class="pick-meta"><h4>${escapeHTML(a.name)}</h4><span>${escapeHTML(a.account || 'TOTP Account')}</span></span>
+          <span class="pick-meta"><h4>${escapeHTML(a.name)}</h4><span>${escapeHTML(a.account || 'No account')}</span></span>
         </label>`).join('');
       document.getElementById('expAll').checked = true;
       updateExportCount();
@@ -2068,7 +2068,7 @@
     }
 
     // ============================================================
-    // TOTP CORE (RFC 4226 / RFC 6238) — pure functions, unit-testable
+    // CODE CORE (RFC 4226 / RFC 6238) — pure functions, unit-testable
     // ============================================================
     /* @core:start */
     function base32ToBuffer(base32) {
@@ -2087,8 +2087,8 @@
       return bytes.buffer;
     }
 
-    // Generates a TOTP for an explicit point in time (seconds since epoch).
-    async function totpAt(secret, options) {
+    // Generates a time-based code for an explicit point in time (seconds since epoch).
+    async function codeAt(secret, options) {
       const opts = options || {};
       const period = opts.period || 30;
       const digits = opts.digits || 6;
@@ -2125,10 +2125,10 @@
     }
 
     // Convenience wrapper for "now" (+ optional per-card offset)
-    async function generateTOTP(secret, period, digits, offset, algorithm) {
+    async function generateCode(secret, period, digits, offset, algorithm) {
       try {
         const epochSeconds = Math.floor(Date.now() / 1000) + (offset || 0);
-        return await totpAt(secret, {
+        return await codeAt(secret, {
           period: period || 30,
           digits: digits || 6,
           algorithm: algorithm || 'SHA-1',
@@ -2237,8 +2237,10 @@
         const url = new URL(raw);
         if ((url.protocol || '').toLowerCase() !== 'otpauth:') return null;
 
+        // Key-URI type field: counter-based entries cannot be supported here because
+        // we never see a moving counter, so everything else is treated as time-based.
         const type = (url.host || url.hostname || '').toLowerCase();
-        if (type !== 'totp') throw new Error('Only TOTP codes are supported.');
+        if (type === 'hotp') throw new Error('Counter-based codes are not supported.');
 
         const label = decodeURIComponent((url.pathname || '').replace(/^\/+/, ''));
         const params = url.searchParams;
@@ -2342,7 +2344,7 @@
         grid.innerHTML = `
           <div class="empty-state">
             <div>🛡️</div>
-            <h3>No Authenticator Keys Found</h3>
+            <h3>No Keys Yet</h3>
             <p style="margin-top:6px;">Tap “Scan QR” or “Add Key” to get started.</p>
           </div>
         `;
@@ -2356,7 +2358,7 @@
         const epoch = Math.floor(Date.now() / 1000) + (item.timeOffset || 0);
         const remainingSeconds = period - (epoch % period);
         const progressPercent = (remainingSeconds / period) * 100;
-        const otpCode = await generateTOTP(item.secret, period, item.digits || 6, item.timeOffset || 0, item.algorithm || 'SHA-1');
+        const otpCode = await generateCode(item.secret, period, item.digits || 6, item.timeOffset || 0, item.algorithm || 'SHA-1');
         const digits = item.digits || 6;
 
         const formattedCode = digits === 6
@@ -2371,7 +2373,7 @@
               <div class="entity-icon editable" title="Change icon" onclick="openIconPicker('${item.id}')">${escapeHTML(item.icon || '🔐')}</div>
               <div class="entity-details">
                 <h3>${escapeHTML(item.name)}</h3>
-                <p>${escapeHTML(item.account || 'TOTP Account')}</p>
+                <p>${escapeHTML(item.account || 'No account')}</p>
               </div>
             </div>
             <div class="timer-badge">
@@ -2772,7 +2774,7 @@
       let passed = 0;
       for (const [t, expected] of vectors) {
         try {
-          const code = await totpAt(secret, { period: 30, digits: 8, algorithm: 'SHA-1', epochSeconds: t });
+          const code = await codeAt(secret, { period: 30, digits: 8, algorithm: 'SHA-1', epochSeconds: t });
           if (code === expected) passed++;
         } catch (e) { /* counted as failure */ }
       }
