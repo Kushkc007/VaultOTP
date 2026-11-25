@@ -4,19 +4,19 @@
 [![Release](https://img.shields.io/github/v/release/Kushkc007/VaultOTP?include_prereleases&sort=semver)](https://github.com/Kushkc007/VaultOTP/releases)
 [![Downloads](https://img.shields.io/github/downloads/Kushkc007/VaultOTP/total)](https://github.com/Kushkc007/VaultOTP/releases)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20android-6366f1.svg)](#downloads)
+[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20windows%20%C2%B7%20macos%20%C2%B7%20android-6366f1.svg)](#downloads)
 [![Tests](https://img.shields.io/badge/RFC%206238-30%20tests%20passing-10b981.svg)](tests)
 [![No telemetry](https://img.shields.io/badge/telemetry-none-10b981.svg)](docs/PRIVACY.md)
 
-**A private, fully offline OTP generator — one codebase, three products: Web app, Windows EXE and Android APK.**
+**A private, fully offline OTP generator — one codebase, four products: Web app, Windows EXE, macOS app and Android APK.**
 
 VaultOTP generates the same 6‑digit (or 8‑digit) two‑factor codes as the big authenticator apps — but it has no account, no sync server, no analytics and no third‑party requests. Open it once, and it works forever, even in airplane mode.
 
 ```
-┌──────────────┬─────────────────────┬────────────────────────┐
-│  🌐 Web app  │  🖥️ Desktop (EXE)   │  📱 Android (APK)      │
-│  PWA, offline│  portable + installer│ signed debug/release  │
-└──────────────┴─────────────────────┴────────────────────────┘
+┌──────────────┬───────────────────────┬────────────────┬────────────────────┐
+│  🌐 Web app  │  🖥️ Windows (EXE)     │  🍎 macOS      │  📱 Android (APK)  │
+│  PWA, offline│  portable + installer │  arm64 + x64   │  debug/release     │
+└──────────────┴───────────────────────┴────────────────┴────────────────────┘
 ```
 
 ---
@@ -108,9 +108,14 @@ Most TOTP apps ask you to trust a cloud. VaultOTP takes the opposite approach:
 | Web (any browser) | `web/index.html` (served) or the single file `web/VaultOTP.html` | [Releases](../../releases) or GitHub Pages |
 | Windows | `VaultOTP-<version>-portable.exe` (no install) and `VaultOTP-Setup-<version>.exe` | [Releases](../../releases) |
 | Android | `VaultOTP-<version>.apk` | [Releases](../../releases) |
-| macOS / Linux | `.dmg` / `.AppImage` built by CI | [Releases](../../releases) |
+| macOS | `VaultOTP-<version>-arm64.dmg` (Apple Silicon) and `VaultOTP-<version>-x64.dmg` (Intel) | [Releases](../../releases) |
 
 > The portable EXE needs no administrator rights. The Android APK is signed with the debug key for side‑loading; see [docs/BUILD.md](docs/BUILD.md) for a release signing setup.
+>
+> **macOS:** the app is not signed with a paid Apple Developer certificate, so the first launch needs
+> **right‑click → Open** (or *System Settings → Privacy & Security → Open Anyway*). After that it opens normally.
+> macOS builds are produced and inspected by the [Build macOS app](../../actions/workflows/desktop-macos.yml) workflow,
+> which opens each DMG, checks the bundle id, version, icon and that the bundled app really contains the Vault code.
 
 ---
 
@@ -128,6 +133,13 @@ Or simply open `web/VaultOTP.html` by double‑clicking it — everything is inl
 npm install
 npm run build:desktop     # → dist/desktop/VaultOTP-<version>-portable.exe
 ```
+
+### macOS app
+```bash
+npm install
+npm run build:desktop     # → dist/desktop/VaultOTP-<version>-arm64.dmg + -x64.dmg
+```
+This needs a Mac (or the `Build macOS app` workflow, which runs on `macos-latest`).
 
 ### Android APK
 ```bash

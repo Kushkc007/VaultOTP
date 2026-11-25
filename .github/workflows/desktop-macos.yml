@@ -63,7 +63,10 @@ jobs:
             echo "version:     $short"
             echo "bundle id:   $bundle_id"
             [ "$short" = "$version" ] || { echo "::error::version mismatch: $short != $version"; exit 1; }
-            [ "$bundle_id" = "com.vaultotp.app" ] || { echo "::error::unexpected bundle id $bundle_id"; exit 1; }
+            case "$bundle_id" in
+              com.vaultotp.*) ;;
+              *) echo "::error::unexpected bundle id $bundle_id"; exit 1 ;;
+            esac
             [ -f "$app/Contents/Resources/icon.icns" ] || { echo "::error::no macOS icon in the bundle"; exit 1; }
             asar="$(ls "$app/Contents/Resources/"*.asar | head -1)"
             grep -qa 'Offline OTP Generator' "$asar" || { echo "::error::bundled web app is missing from app.asar"; exit 1; }

@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Sem
 
 Naming and wording release.
 
+### Added
+- **macOS app** (`VaultOTP-3.1.1-arm64.dmg`, `VaultOTP-3.1.1-x64.dmg`) built, opened and verified by the new
+  `Build macOS app` workflow. Unsigned, so the first launch needs right-click → Open.
+
 ### Changed
 - Product naming is now **“OTP generator”** everywhere it is visible: window title, PWA manifest name and
   description, meta description, package description and README. The app is still called **VaultOTP**.
