@@ -30,7 +30,7 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "dev": "node tools/build.mjs && node tools/serve.mjs",
-    "test": "node --test tests/",
+    "test": "node --test tests/totp.test.mjs tests/repo.test.mjs",
     "icons": "node tools/gen-icons.mjs",
     "build:desktop": "node tools/build.mjs && electron-builder --config desktop/electron-builder.yml",
     "build:android": "node tools/build.mjs && node tools/build-android.mjs",
